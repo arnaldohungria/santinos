@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seu pedido — Santino's</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800;900&family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="pedido">
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="wordmark">Santino's</a>
+    <a href="index.html" class="checkout-voltar">Ir para o site</a>
+  </div>
+</header>
+
+<main class="pedido">
+  <div class="wrap">
+    <div class="pedido-status" id="pedidoStatus">
+      <h1 class="pedido-titulo">Verificando seu pedido…</h1>
+      <p class="pedido-texto">Um instante.</p>
+      <div class="pedido-acoes">
+        <a href="index.html#produtos" class="btn btn-ghost">Voltar aos produtos</a>
+        <a href="https://wa.me/5515998569761" class="btn btn-primary" target="_blank" rel="noopener">Falar no WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <p class="wordmark wordmark-sm">Santino's</p>
+    <p class="footer-copy">© <span id="year"></span> Santino's. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script src="loja.js"></script>
+</body>
+</html>

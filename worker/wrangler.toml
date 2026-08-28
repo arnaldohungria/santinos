@@ -1,0 +1,12 @@
+name = "santinos-checkout"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# Ajuste depois do primeiro deploy / conforme o domínio final.
+[vars]
+SITE_URL = "https://www.santinos.com.br"
+ALLOWED_ORIGIN = "https://www.santinos.com.br"
+# NOTIFY_EMAIL = "contato@santinos.com.br"
+
+# Secret (NÃO vai aqui): configurar com
+#   npx wrangler secret put MP_ACCESS_TOKEN

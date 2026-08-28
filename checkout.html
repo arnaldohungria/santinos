@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — Santino's</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800;900&family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="checkout">
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="wordmark">Santino's</a>
+    <a href="index.html#produtos" class="checkout-voltar">&larr; Voltar à loja</a>
+  </div>
+</header>
+
+<main class="checkout">
+  <div class="wrap">
+
+    <p class="section-eyebrow">Finalizar compra</p>
+    <h1 class="section-title">Entrega e pagamento</h1>
+
+    <p class="checkout-vazio" id="ckVazio" hidden>
+      Seu carrinho está vazio. <a href="index.html#produtos">Ver os molhos</a>.
+    </p>
+
+    <div class="checkout-grid" id="ckConteudo">
+
+      <form class="checkout-form" id="ckForm" novalidate>
+        <fieldset>
+          <legend>Seus dados</legend>
+          <label>Nome completo
+            <input type="text" name="nome" autocomplete="name" required>
+          </label>
+          <div class="linha-2">
+            <label>E-mail
+              <input type="email" name="email" autocomplete="email" required>
+            </label>
+            <label>WhatsApp
+              <input type="tel" name="whatsapp" inputmode="numeric" placeholder="(15) 99999-9999" autocomplete="tel" required>
+            </label>
+          </div>
+          <label>CPF
+            <input type="text" name="cpf" inputmode="numeric" placeholder="Somente números" autocomplete="off" required>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Endereço de entrega</legend>
+          <div class="linha-2">
+            <label>CEP
+              <input type="text" name="cep" inputmode="numeric" placeholder="00000-000" autocomplete="postal-code" required>
+            </label>
+            <label>Número
+              <input type="text" name="numero" autocomplete="address-line2" required>
+            </label>
+          </div>
+          <label>Endereço
+            <input type="text" name="endereco" autocomplete="address-line1" required>
+          </label>
+          <label>Complemento <span class="opt">(opcional)</span>
+            <input type="text" name="complemento" autocomplete="off">
+          </label>
+          <div class="linha-3">
+            <label>Bairro
+              <input type="text" name="bairro" required>
+            </label>
+            <label>Cidade
+              <input type="text" name="cidade" required>
+            </label>
+            <label>UF
+              <input type="text" name="uf" maxlength="2" required>
+            </label>
+          </div>
+          <p class="checkout-aviso" id="ckAviso" role="status"></p>
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary checkout-submit" id="ckSubmit">Pagar com Mercado Pago</button>
+        <p class="checkout-seguro">Pagamento processado pelo Mercado Pago — Pix, cartão ou boleto. A Santino's não recebe os dados do seu cartão.</p>
+      </form>
+
+      <aside class="checkout-resumo">
+        <h2>Resumo do pedido</h2>
+        <ul id="ckResumo" class="resumo-itens"></ul>
+        <div class="resumo-linha">
+          <span>Subtotal</span>
+          <span id="ckSubtotal">R$ 0,00</span>
+        </div>
+        <div class="resumo-linha">
+          <span>Frete <em id="ckFreteRotulo">Informe o CEP</em></span>
+          <span id="ckFrete">—</span>
+        </div>
+        <div class="resumo-linha resumo-total">
+          <span>Total</span>
+          <strong id="ckTotal">R$ 0,00</strong>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <p class="wordmark wordmark-sm">Santino's</p>
+    <nav class="footer-links" aria-label="Páginas institucionais">
+      <a href="trocas-e-devolucoes.html">Trocas e devoluções</a>
+      <a href="privacidade.html">Privacidade</a>
+      <a href="termos.html">Termos de uso</a>
+    </nav>
+    <p class="footer-copy">© <span id="year"></span> Santino's. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script src="loja.js"></script>
+</body>
+</html>
