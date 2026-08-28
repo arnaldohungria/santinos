@@ -493,6 +493,24 @@ async function initInstagram() {
   }
 }
 
+/* ================================================================
+ * PÁGINA DE PRODUTO (PDP) — <body data-page="produto">
+ * ================================================================ */
+function initProduto() {
+  const btn = document.querySelector("[data-add-produto]");
+  if (!btn) return;
+  const id = btn.dataset.addProduto;
+  const qtdInput = document.getElementById("pdpQtd");
+
+  btn.addEventListener("click", () => {
+    let q = parseInt(qtdInput && qtdInput.value, 10);
+    if (!Number.isFinite(q) || q < 1) q = 1;
+    q = Math.min(q, 99);
+    addItem(id, q);
+    abrirDrawer();
+  });
+}
+
 /* ---------- Boot ---------- */
 document.addEventListener("DOMContentLoaded", () => {
   initVitrine();
@@ -501,4 +519,5 @@ document.addEventListener("DOMContentLoaded", () => {
   const page = document.body.dataset.page;
   if (page === "checkout") initCheckout();
   if (page === "pedido") initPedido();
+  if (page === "produto") initProduto();
 });
