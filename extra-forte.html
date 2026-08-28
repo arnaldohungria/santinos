@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Santino's Extra Forte — Molho de pimenta Carolina Reaper</title>
+<meta name="description" content="Santino's Extra Forte: molho artesanal com Carolina Reaper, uma das pimentas mais ardidas do mundo. Calor intenso e aroma cítrico. Frasco de vidro de 60 ml.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800;900&family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="produto">
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="wordmark">Santino's</a>
+    <div class="header-actions">
+      <a href="index.html#produtos" class="checkout-voltar">&larr; Todos os molhos</a>
+      <button class="cart-toggle" id="cartToggle" aria-haspopup="dialog" aria-controls="cartDrawer" aria-label="Abrir carrinho">
+        <span class="cart-toggle-label">Carrinho</span>
+        <span class="cart-count" id="cartCount" data-count="0">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="pdp" data-heat="extra-forte">
+  <div class="wrap pdp-grid">
+
+    <div class="pdp-media">
+      <img src="extra-forte.jpg" alt="Frasco de Santino's Extra Forte, molho de pimenta artesanal de 60 ml" class="pdp-photo">
+    </div>
+
+    <div class="pdp-info">
+      <p class="produto-eyebrow">Santino's Reaper</p>
+      <h1>Santino's Extra Forte</h1>
+
+      <div class="heat-gauge" role="img" aria-label="Ardência: extra forte">
+        <div class="heat-track"><div class="heat-fill" style="width:81%"></div></div>
+        <span class="heat-label">~Extra Forte</span>
+      </div>
+
+      <p class="pdp-preco" data-preco-de="extra-forte">—</p>
+
+      <div class="pdp-compra">
+        <label class="pdp-qtd">Quantidade
+          <input type="number" id="pdpQtd" min="1" max="99" value="1" inputmode="numeric">
+        </label>
+        <button class="btn btn-primary" data-add-produto="extra-forte" type="button">Adicionar ao carrinho</button>
+      </div>
+
+      <p class="produto-pairing"><span>Combina com</span> poucas gotas por prato — o resto é com você.</p>
+    </div>
+  </div>
+
+  <section class="pdp-desc">
+    <div class="wrap">
+      <h2>Sobre o Extra Forte</h2>
+      <p>O Santino's Extra Forte foi desenvolvido para quem busca uma experiência intensa e inesquecível. Produzido artesanalmente com a lendária Carolina Reaper, uma das pimentas mais ardidas do mundo, este molho entrega alta pungência aliada a um marcante aroma cítrico, criando um equilíbrio perfeito entre potência e sabor.</p>
+      <p>Mais do que um molho extremamente picante, o Santino's Extra Forte valoriza as características naturais da pimenta, proporcionando uma explosão de calor acompanhada por notas aromáticas que tornam cada gota uma experiência única para os verdadeiros apreciadores de pimentas.</p>
+      <p>Ideal para elevar o sabor de carnes, hambúrgueres, churrascos, petiscos e qualquer prato que mereça um toque de intensidade, este molho é destinado a quem não abre mão de desafios gastronômicos e da autenticidade da produção artesanal.</p>
+
+      <ul class="pdp-ficha">
+        <li><span>Picância</span> Muito alta</li>
+        <li><span>Perfil sensorial</span> Aroma cítrico e calor intenso da Carolina Reaper</li>
+        <li><span>Produção</span> Artesanal</li>
+        <li><span>Embalagem</span> Frasco de vidro de 60 ml</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="pdp-outros">
+    <div class="wrap">
+      <h2>Os outros molhos</h2>
+      <div class="outros-grid">
+        <a class="outro-card" data-heat="suave" href="suave.html">
+          <img src="suave.jpg" alt="Santino's Suave" loading="lazy">
+          <span class="outro-nome">Santino's Suave</span>
+          <span class="outro-heat">~Leve</span>
+        </a>
+        <a class="outro-card" data-heat="defumado" href="defumado.html">
+          <img src="defumado.jpg" alt="Santino's Defumado" loading="lazy">
+          <span class="outro-nome">Santino's Defumado</span>
+          <span class="outro-heat">~Moderada</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <p class="wordmark wordmark-sm">Santino's</p>
+    <nav class="footer-links" aria-label="Páginas institucionais">
+      <a href="trocas-e-devolucoes.html">Trocas e devoluções</a>
+      <a href="privacidade.html">Privacidade</a>
+      <a href="termos.html">Termos de uso</a>
+    </nav>
+    <p class="footer-copy">© <span id="year"></span> Santino's. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<div class="cart-overlay" id="cartOverlay" hidden></div>
+<aside class="cart-drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-labelledby="cartDrawerTitle" aria-hidden="true">
+  <div class="cart-head">
+    <h2 id="cartDrawerTitle">Seu carrinho</h2>
+    <button class="cart-close" id="cartClose" type="button" aria-label="Fechar carrinho">&times;</button>
+  </div>
+  <div class="cart-body" id="cartBody">
+    <p class="cart-empty" id="cartEmpty">Seu carrinho está vazio.</p>
+    <ul class="cart-items" id="cartItems"></ul>
+  </div>
+  <div class="cart-foot" id="cartFoot" hidden>
+    <div class="cart-subtotal">
+      <span>Subtotal</span>
+      <strong id="cartSubtotal">R$ 0,00</strong>
+    </div>
+    <p class="cart-note">Frete calculado na próxima etapa.</p>
+    <a href="checkout.html" class="btn btn-primary cart-checkout" id="cartCheckout">Ir para a entrega</a>
+  </div>
+</aside>
+
+<script src="script.js"></script>
+<script src="loja.js"></script>
+</body>
+</html>
