@@ -301,6 +301,7 @@ section{ padding: 120px 0; }
   margin-bottom: 32px;
 }
 .insta-post{
+  position: relative;
   display:block;
   aspect-ratio: 1 / 1;
   overflow:hidden;
@@ -313,6 +314,14 @@ section{ padding: 120px 0; }
   transition: transform 0.4s ease;
 }
 .insta-post:hover img{ transform: scale(1.05); }
+.insta-video{
+  position:absolute; top: 10px; right: 10px;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 7px 0 7px 12px;
+  border-color: transparent transparent transparent var(--bone);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+}
 .insta-fallback{ color: var(--bone-dim); margin-bottom: 24px; }
 .insta-cta{ margin-top: 4px; }
 

@@ -41,7 +41,7 @@ const LOJA_CONFIG = {
   // Galeria do Instagram na home. ID do feed do Behold.so
   // (behold.so -> seu feed -> "Feed ID"). Vazio => a galeria não aparece,
   // fica só o botão "Seguir no Instagram".
-  beholdFeedId: "",
+  beholdFeedId: "pq4swuZKZCYr2UfelzGh",
 };
 
 const UF_REGIAO = {
@@ -463,16 +463,31 @@ async function initInstagram() {
     grid.innerHTML = posts
       .map((p) => {
         const img =
-          p.sizes?.medium?.mediaUrl || p.thumbnailUrl || p.mediaUrl || "";
-        const cap = (p.prunedCaption || p.caption || "Post no Instagram")
-          .slice(0, 120)
-          .replace(/"/g, "&quot;");
+          p.sizes?.large?.mediaUrl ||
+          p.sizes?.medium?.mediaUrl ||
+          p.thumbnailUrl ||
+          p.mediaUrl ||
+          "";
+        const legenda = (p.prunedCaption || "").trim() || "Post da Santino's no Instagram";
+        const cap = legenda.slice(0, 140).replace(/"/g, "&quot;");
+        const marca = p.mediaType === "VIDEO" ? '<span class="insta-video" aria-hidden="true"></span>' : "";
         return `<a class="insta-post" href="${p.permalink}" target="_blank" rel="noopener" aria-label="${cap}">
-          <img src="${img}" alt="${cap}" loading="lazy">
+          <img src="${img}" alt="${cap}" loading="lazy" referrerpolicy="no-referrer">${marca}
         </a>`;
       })
       .join("");
     grid.hidden = false;
+
+    // Se as imagens não carregarem, tira o post; se sobrar zero, mostra o fallback.
+    grid.querySelectorAll("img").forEach((im) => {
+      im.addEventListener("error", () => {
+        im.closest(".insta-post")?.remove();
+        if (grid.querySelectorAll(".insta-post").length === 0) {
+          grid.hidden = true;
+          if (fallback) fallback.hidden = false;
+        }
+      });
+    });
   } catch {
     if (fallback) fallback.hidden = false;
   }
