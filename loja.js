@@ -11,11 +11,11 @@ const LOJA_CONFIG = {
   moeda: "BRL",
 
   // Preços em CENTAVOS (inteiro, evita erro de ponto flutuante).
-  // >>> PLACEHOLDER — trocar pelos valores reais <<<
+  // Preço definido pelo Arnaldo: R$ 19,90 para os três (2026-08).
   produtos: {
-    "suave":       { nome: "Santino's Suave",       preco: 2990, img: "suave.jpg" },
-    "defumado":    { nome: "Santino's Defumado",    preco: 3490, img: "defumado.jpg" },
-    "extra-forte": { nome: "Santino's Extra Forte", preco: 3990, img: "extra-forte.jpg" },
+    "suave":       { nome: "Santino's Suave",       preco: 1990, img: "suave.jpg" },
+    "defumado":    { nome: "Santino's Defumado",    preco: 1990, img: "defumado.jpg" },
+    "extra-forte": { nome: "Santino's Extra Forte", preco: 1990, img: "extra-forte.jpg" },
   },
 
   // Frete fixo por região, em CENTAVOS. >>> PLACEHOLDER <<<
@@ -37,6 +37,11 @@ const LOJA_CONFIG = {
   // URL pública do Cloudflare Worker que cria a preferência no Mercado Pago.
   // Vazio => o checkout mostra "pagamento em configuração" e não cobra nada.
   workerUrl: "",
+
+  // Galeria do Instagram na home. ID do feed do Behold.so
+  // (behold.so -> seu feed -> "Feed ID"). Vazio => a galeria não aparece,
+  // fica só o botão "Seguir no Instagram".
+  beholdFeedId: "pq4swuZKZCYr2UfelzGh",
 };
 
 const UF_REGIAO = {
@@ -434,10 +439,65 @@ function initPedido() {
   if (info.classe === "ok") esvaziarCarrinho();
 }
 
+/* ================================================================
+ * INSTAGRAM: galeria dos últimos posts via Behold.so (auto-atualiza)
+ * ================================================================ */
+async function initInstagram() {
+  const grid = document.getElementById("instaGrid");
+  const fallback = document.getElementById("instaFallback");
+  if (!grid) return;
+
+  const id = LOJA_CONFIG.beholdFeedId;
+  if (!id) {
+    if (fallback) fallback.hidden = false;
+    return;
+  }
+
+  try {
+    const r = await fetch(`https://feeds.behold.so/${id}`);
+    if (!r.ok) throw new Error("feed indisponível");
+    const data = await r.json();
+    const posts = (Array.isArray(data) ? data : data.posts || []).slice(0, 3);
+    if (posts.length === 0) throw new Error("feed vazio");
+
+    grid.innerHTML = posts
+      .map((p) => {
+        const img =
+          p.sizes?.large?.mediaUrl ||
+          p.sizes?.medium?.mediaUrl ||
+          p.thumbnailUrl ||
+          p.mediaUrl ||
+          "";
+        const legenda = (p.prunedCaption || "").trim() || "Post da Santino's no Instagram";
+        const cap = legenda.slice(0, 140).replace(/"/g, "&quot;");
+        const marca = p.mediaType === "VIDEO" ? '<span class="insta-video" aria-hidden="true"></span>' : "";
+        return `<a class="insta-post" href="${p.permalink}" target="_blank" rel="noopener" aria-label="${cap}">
+          <img src="${img}" alt="${cap}" loading="lazy" referrerpolicy="no-referrer">${marca}
+        </a>`;
+      })
+      .join("");
+    grid.hidden = false;
+
+    // Se as imagens não carregarem, tira o post; se sobrar zero, mostra o fallback.
+    grid.querySelectorAll("img").forEach((im) => {
+      im.addEventListener("error", () => {
+        im.closest(".insta-post")?.remove();
+        if (grid.querySelectorAll(".insta-post").length === 0) {
+          grid.hidden = true;
+          if (fallback) fallback.hidden = false;
+        }
+      });
+    });
+  } catch {
+    if (fallback) fallback.hidden = false;
+  }
+}
+
 /* ---------- Boot ---------- */
 document.addEventListener("DOMContentLoaded", () => {
   initVitrine();
   initDrawer();
+  initInstagram();
   const page = document.body.dataset.page;
   if (page === "checkout") initCheckout();
   if (page === "pedido") initPedido();

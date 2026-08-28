@@ -225,17 +225,14 @@ section{ padding: 120px 0; }
 .story-text h2{ font-size: clamp(30px,4vw,44px); max-width: 14ch; }
 .story-text p{ color: var(--bone-dim); font-size: 17px; max-width: 52ch; }
 .story-art{ display:flex; justify-content:center; }
-.crest{ width: 100%; max-width: 300px; }
-.crest-ring{ fill:none; stroke: var(--bone-faint); stroke-width:1.5; }
-.crest-ring-inner{ fill:none; stroke: var(--ember); stroke-width:1; opacity:0.5; }
-.crest-flame{ fill: var(--ember); }
-.crest-text{
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  fill: var(--bone);
+.story-logo{
+  width: 100%;
+  max-width: 340px;
+  background: var(--bone);
+  border-radius: 14px;
+  padding: 30px 28px;
+  box-shadow: 0 20px 44px rgba(0,0,0,0.45);
 }
-.crest-text-sm{ font-size: 9px; fill: var(--bone-dim); }
 
 /* ---------- Produtos ---------- */
 .produtos{ border-top: 1px solid var(--bone-faint); }
@@ -294,45 +291,39 @@ section{ padding: 120px 0; }
 .heat-fill{ height:100%; background: var(--heat-color); border-radius: 3px; }
 .heat-label{ font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
 
-/* ---------- Escala de ardência ---------- */
-.ardencia{ border-top: 1px solid var(--bone-faint); }
-.ardencia-note{ max-width: 60ch; color: var(--bone-dim); margin-bottom: 60px; }
-
-.scale{ margin-top: 20px; }
-.scale-track{
+/* ---------- Instagram ---------- */
+.insta{ border-top: 1px solid var(--bone-faint); }
+.insta-note{ max-width: 60ch; color: var(--bone-dim); margin-bottom: 44px; }
+.insta-grid{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.insta-post{
   position: relative;
-  height: 10px;
-  border-radius: 5px;
-  margin-bottom: 46px;
+  display:block;
+  aspect-ratio: 1 / 1;
+  overflow:hidden;
+  border-radius: 6px;
+  border: 1px solid var(--bone-faint);
 }
-.scale-gradient{
-  position:absolute; inset:0;
-  border-radius:5px;
-  background: linear-gradient(90deg, var(--suave), var(--defumado) 60%, var(--reaper));
+.insta-post img{
+  width:100%; height:100%;
+  object-fit: cover; display:block;
+  transition: transform 0.4s ease;
 }
-.scale-marker{
-  position:absolute; top:50%; transform: translate(-50%, -50%);
-  display:flex; flex-direction:column; align-items:center; gap:10px;
+.insta-post:hover img{ transform: scale(1.05); }
+.insta-video{
+  position:absolute; top: 10px; right: 10px;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 7px 0 7px 12px;
+  border-color: transparent transparent transparent var(--bone);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
 }
-.dot{
-  width: 18px; height: 18px; border-radius: 50%;
-  border: 3px solid var(--charcoal);
-  box-shadow: 0 0 0 1px var(--bone-faint);
-}
-.dot-suave{ background: var(--suave); }
-.dot-defumado{ background: var(--defumado); }
-.dot-forte{ background: var(--reaper); }
-.scale-name{
-  font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em;
-  color: var(--bone-dim); white-space: nowrap;
-  position: absolute; top: 26px;
-}
-.scale-axis{
-  display:flex; justify-content:space-between;
-  font-family: var(--mono); font-size: 12px; color: var(--bone-dim);
-  border-top: 1px solid var(--bone-faint); padding-top: 12px;
-}
-.ardencia-disclaimer{ font-size: 13px; color: var(--bone-dim); margin-top: 56px; }
+.insta-fallback{ color: var(--bone-dim); margin-bottom: 24px; }
+.insta-cta{ margin-top: 4px; }
 
 /* ---------- Contato ---------- */
 .contato{ border-top: 1px solid var(--bone-faint); }

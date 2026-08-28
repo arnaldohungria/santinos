@@ -17,11 +17,11 @@
  * preço/frete, mude nos DOIS lugares. Aqui é o que efetivamente cobra.
  */
 
-// Preços em CENTAVOS. >>> PLACEHOLDER — manter igual ao loja.js <<<
+// Preços em CENTAVOS. Manter IGUAL ao loja.js. Preço atual: R$ 19,90 (2026-08).
 const PRECOS = {
-  "suave":       { nome: "Santino's Suave",       preco: 2990 },
-  "defumado":    { nome: "Santino's Defumado",    preco: 3490 },
-  "extra-forte": { nome: "Santino's Extra Forte", preco: 3990 },
+  "suave":       { nome: "Santino's Suave",       preco: 1990 },
+  "defumado":    { nome: "Santino's Defumado",    preco: 1990 },
+  "extra-forte": { nome: "Santino's Extra Forte", preco: 1990 },
 };
 
 // Frete fixo por região, em CENTAVOS. >>> PLACEHOLDER <<<
