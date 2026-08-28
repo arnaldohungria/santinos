@@ -17,15 +17,21 @@
 <header class="site-header">
   <div class="wrap header-inner">
     <a href="#top" class="wordmark">Santino's</a>
-    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="primaryNav" aria-label="Abrir menu">
-      <span></span><span></span><span></span>
-    </button>
-    <nav id="primaryNav" class="primary-nav">
-      <a href="#historia">História</a>
-      <a href="#produtos">Produtos</a>
-      <a href="#ardencia">Ardência</a>
-      <a href="#contato">Contato</a>
-    </nav>
+    <div class="header-actions">
+      <nav id="primaryNav" class="primary-nav">
+        <a href="#historia">História</a>
+        <a href="#produtos">Produtos</a>
+        <a href="#ardencia">Ardência</a>
+        <a href="#contato">Contato</a>
+      </nav>
+      <button class="cart-toggle" id="cartToggle" aria-haspopup="dialog" aria-controls="cartDrawer" aria-label="Abrir carrinho">
+        <span class="cart-toggle-label">Carrinho</span>
+        <span class="cart-count" id="cartCount" data-count="0">0</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="primaryNav" aria-label="Abrir menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -95,6 +101,10 @@ Embalagem: Frasco de vidro de 60 ml.</p>
               <div class="heat-track"><div class="heat-fill" style="width:17%"></div></div>
               <span class="heat-label">~Leve</span>
             </div>
+            <div class="produto-compra">
+              <span class="produto-preco" data-preco-de="suave">—</span>
+              <button class="btn btn-primary add-carrinho" data-add="suave" type="button">Adicionar</button>
+            </div>
           </div>
         </article>
 
@@ -118,6 +128,10 @@ Embalagem: Frasco de vidro de 60 ml.</p>
             <div class="heat-gauge" role="img" aria-label="Ardência: moderada">
               <div class="heat-track"><div class="heat-fill" style="width:66%"></div></div>
               <span class="heat-label">~Moderada</span>
+            </div>
+            <div class="produto-compra">
+              <span class="produto-preco" data-preco-de="defumado">—</span>
+              <button class="btn btn-primary add-carrinho" data-add="defumado" type="button">Adicionar</button>
             </div>
           </div>
         </article>
@@ -143,6 +157,10 @@ Embalagem: Frasco de vidro de 60 ml.</p>
             <div class="heat-gauge" role="img" aria-label="Ardência: extra forte">
               <div class="heat-track"><div class="heat-fill" style="width:81%"></div></div>
               <span class="heat-label">~Extra Forte</span>
+            </div>
+            <div class="produto-compra">
+              <span class="produto-preco" data-preco-de="extra-forte">—</span>
+              <button class="btn btn-primary add-carrinho" data-add="extra-forte" type="button">Adicionar</button>
             </div>
           </div>
         </article>
@@ -197,10 +215,37 @@ Embalagem: Frasco de vidro de 60 ml.</p>
   <div class="wrap footer-inner">
     <p class="wordmark wordmark-sm">Santino's</p>
     <p class="footer-tag">Para quem realmente gosta de pimenta.</p>
+    <nav class="footer-links" aria-label="Páginas institucionais">
+      <a href="trocas-e-devolucoes.html">Trocas e devoluções</a>
+      <a href="privacidade.html">Privacidade</a>
+      <a href="termos.html">Termos de uso</a>
+    </nav>
     <p class="footer-copy">© <span id="year"></span> Santino's. Todos os direitos reservados.</p>
   </div>
 </footer>
 
+<!-- Carrinho -->
+<div class="cart-overlay" id="cartOverlay" hidden></div>
+<aside class="cart-drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-labelledby="cartDrawerTitle" aria-hidden="true">
+  <div class="cart-head">
+    <h2 id="cartDrawerTitle">Seu carrinho</h2>
+    <button class="cart-close" id="cartClose" type="button" aria-label="Fechar carrinho">&times;</button>
+  </div>
+  <div class="cart-body" id="cartBody">
+    <p class="cart-empty" id="cartEmpty">Seu carrinho está vazio.</p>
+    <ul class="cart-items" id="cartItems"></ul>
+  </div>
+  <div class="cart-foot" id="cartFoot" hidden>
+    <div class="cart-subtotal">
+      <span>Subtotal</span>
+      <strong id="cartSubtotal">R$ 0,00</strong>
+    </div>
+    <p class="cart-note">Frete calculado na próxima etapa.</p>
+    <a href="checkout.html" class="btn btn-primary cart-checkout" id="cartCheckout">Ir para a entrega</a>
+  </div>
+</aside>
+
 <script src="script.js"></script>
+<script src="loja.js"></script>
 </body>
 </html>

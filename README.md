@@ -1,15 +1,33 @@
-# Santino's — site institucional
+# Santino's — site + loja
 
-Site estático de uma página para a marca Santino's, com os três produtos: Suave, Defumado e Extra Forte.
+Site da marca Santino's (Suave, Defumado e Extra Forte) com carrinho e checkout
+via Mercado Pago. Front-end estático (hospedado na Vercel); o checkout usa um
+Cloudflare Worker (pasta `worker/`).
 
 ## Arquivos
 
-- `index.html` — estrutura da página
-- `style.css` — estilo (paleta, tipografia, layout)
+### Site (estático, sem build)
+- `index.html` — página principal + markup do carrinho (drawer)
+- `checkout.html` — endereço, resumo do pedido e botão de pagamento
+- `pedido.html` — página de retorno do Mercado Pago (sucesso / pendente / falha)
+- `trocas-e-devolucoes.html`, `privacidade.html`, `termos.html` — páginas legais (têm lacunas `[ASSIM]` para preencher)
+- `style.css` — estilo (paleta, tipografia, layout, loja)
 - `script.js` — menu mobile e ano do rodapé
-- `CNAME` — aponta o GitHub Pages para o domínio `santinos.com.br`
+- `loja.js` — **config no topo** (preços, frete, URL do Worker) + carrinho + checkout
+- `CNAME` — resquício do GitHub Pages; o site roda na Vercel
 
-Não há build nem dependências — é só HTML/CSS/JS puro.
+### Backend do checkout
+- `worker/` — Cloudflare Worker que cria a preferência no Mercado Pago. Ver `worker/README.md`.
+
+## O que ainda falta para vender de verdade
+
+1. Preços reais em `loja.js` **e** `worker/src/index.js` (hoje são placeholders).
+2. Valores de frete por região nos mesmos dois arquivos.
+3. Deploy do Worker + `wrangler secret put MP_ACCESS_TOKEN`, e colar a URL dele em `LOJA_CONFIG.workerUrl`.
+4. Preencher as lacunas das páginas legais (CNPJ/endereço/datas).
+5. (v2) Frete real via Melhor Envio; webhook do Worker notificando o pedido.
+
+Não há build nem dependências no site — é só HTML/CSS/JS puro.
 
 ## Como publicar no GitHub Pages (repositório `santinos`)
 
