@@ -439,14 +439,20 @@ async function handleRequest(req, env) {
   // Remover depois de identificada a causa.
   if (url.pathname === "/debug-fetch-teste") {
     const alvo = url.searchParams.get("url") || "https://example.com";
+    const metodo = url.searchParams.get("method") || "GET";
     try {
-      const r = await fetch(alvo);
+      const opts = { method: metodo };
+      if (metodo === "POST") {
+        opts.headers = { "Content-Type": "application/json" };
+        opts.body = "{}";
+      }
+      const r = await fetch(alvo, opts);
       const corpo = await r.text();
       const headersObj = {};
       r.headers.forEach((v, k) => { headersObj[k] = v; });
-      return json({ alvo, status: r.status, headers: headersObj, corpo: corpo.slice(0, 200) }, 200, env);
+      return json({ alvo, metodo, status: r.status, headers: headersObj, corpo: corpo.slice(0, 200) }, 200, env);
     } catch (e) {
-      return json({ alvo, excecao: e?.message || String(e) }, 200, env);
+      return json({ alvo, metodo, excecao: e?.message || String(e) }, 200, env);
     }
   }
 
