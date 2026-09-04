@@ -137,9 +137,16 @@ async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
     });
     if (!r.ok) {
       const corpo = await r.text().catch(() => "");
+      const headersObj = {};
+      r.headers.forEach((v, k) => { headersObj[k] = v; });
       const msg = `Proxy Vercel respondeu ${r.status} — usando fallback. Corpo: ${corpo.slice(0, 300)}`;
-      console.log("Melhor Envio:", msg);
-      if (debug) debug.motivo = msg;
+      console.log("Melhor Envio:", msg, JSON.stringify(headersObj));
+      if (debug) {
+        debug.motivo = msg;
+        debug.statusText = r.statusText;
+        debug.headersResposta = headersObj;
+        debug.proxyUrl = proxyUrl;
+      }
       return null;
     }
     const cotacoes = await r.json();
