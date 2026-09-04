@@ -434,6 +434,22 @@ async function handleRequest(req, env) {
     return json({ ok: true, servico: "santinos-checkout" }, 200, env);
   }
 
+  // TODO(temporário): diagnóstico do bug do 502 no fetch de saída — testa se
+  // o problema é geral (qualquer fetch do Worker) ou específico da Vercel.
+  // Remover depois de identificada a causa.
+  if (url.pathname === "/debug-fetch-teste") {
+    const alvo = url.searchParams.get("url") || "https://example.com";
+    try {
+      const r = await fetch(alvo);
+      const corpo = await r.text();
+      const headersObj = {};
+      r.headers.forEach((v, k) => { headersObj[k] = v; });
+      return json({ alvo, status: r.status, headers: headersObj, corpo: corpo.slice(0, 200) }, 200, env);
+    } catch (e) {
+      return json({ alvo, excecao: e?.message || String(e) }, 200, env);
+    }
+  }
+
   if (url.pathname === "/calcular-frete" && req.method === "POST") {
     return calcularFreteEndpoint(req, env);
   }
