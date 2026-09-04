@@ -4,7 +4,7 @@
  * -> sua fonte de dados -> ele mostra um número tipo "1234567890123456").
  * Enquanto estiver vazio, nada é carregado — sem pixel, sem erro no console.
  */
-const META_PIXEL_ID = "";
+const META_PIXEL_ID = "1066393226136565";
 
 if (META_PIXEL_ID) {
   !function (f, b, e, v, n, t, s) {
