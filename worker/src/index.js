@@ -11,12 +11,18 @@
  *   POST /webhook             -> recebe a notificação de pagamento do Mercado Pago
  *
  * Secrets/vars (wrangler secret put / wrangler.toml [vars]):
- *   MP_ACCESS_TOKEN     (secret)  Access Token de PRODUÇÃO do Mercado Pago
- *   MELHOR_ENVIO_TOKEN  (secret)  Token de API do Melhor Envio (escopo shipping-calculate)
- *   ORIGEM_CEP          (var)     CEP de onde os pedidos saem (Itapetininga) — sem traço
- *   SITE_URL            (var)     ex: https://www.santinos.com.br
- *   ALLOWED_ORIGIN      (var)     origem liberada no CORS (mesmo valor de SITE_URL)
- *   NOTIFY_EMAIL        (var)     (opcional) e-mail para aviso de pedido — TODO
+ *   MP_ACCESS_TOKEN        (secret)  Access Token de PRODUÇÃO do Mercado Pago
+ *   INTERNAL_SHARED_SECRET (secret)  mesmo valor configurado na Vercel (api/melhor-envio.js);
+ *                                    autentica a chamada Worker -> proxy de frete
+ *   SITE_URL               (var)     ex: https://www.santinos.com.br — também usado
+ *                                    pra achar o proxy de frete (SITE_URL + /api/melhor-envio)
+ *   ALLOWED_ORIGIN         (var)     origem liberada no CORS (mesmo valor de SITE_URL)
+ *   NOTIFY_EMAIL           (var)     (opcional) e-mail para aviso de pedido — TODO
+ *
+ * A cotação real do Melhor Envio NÃO é chamada direto daqui — veja o
+ * comentário em cotarMelhorEnvio() abaixo. O token do Melhor Envio e o
+ * ORIGEM_CEP agora ficam configurados na Vercel (api/melhor-envio.js), não
+ * mais neste Worker.
  *
  * ATENÇÃO: a tabela PRECOS e a lógica de frete abaixo são a CÓPIA-VERDADE.
  * O arquivo loja.js do site tem os mesmos números só para exibir/estimar. Se
@@ -91,54 +97,49 @@ function json(data, status, env) {
   });
 }
 
-// Cotação real via Melhor Envio. Só usa a rota /shipment/calculate (grátis,
-// sem custo, sem gerar etiqueta nem mexer em saldo) — nunca chama
-// shipping-generate/checkout/cancel a partir daqui. Devolve até 5 opções
-// (mais barata primeiro) pro cliente escolher, não só a mais barata.
+// Cotação real via Melhor Envio — via proxy na Vercel (api/melhor-envio.js).
+// Motivo do proxy: chamando o Melhor Envio direto DAQUI (Worker), a API dele
+// devolve 401 mesmo com o token certo — provavelmente as duas APIs ficam
+// atrás da Cloudflare e a proteção do Melhor Envio bloqueia tráfego
+// Worker-a-Worker. Chamando a mesma requisição a partir da Vercel (onde o
+// site já está hospedado), funciona normalmente. O proxy só repassa a
+// cotação bruta; toda a lógica de filtro/ordenação continua aqui.
 async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
-  if (!env.MELHOR_ENVIO_TOKEN) {
-    const msg = "MELHOR_ENVIO_TOKEN não configurado — usando fallback.";
+  if (!env.SITE_URL) {
+    const msg = "SITE_URL não configurado — usando fallback.";
     console.log("Melhor Envio:", msg);
     if (debug) debug.motivo = msg;
     return null;
   }
-  if (!env.ORIGEM_CEP) {
-    const msg = "ORIGEM_CEP não configurado — usando fallback.";
+  if (!env.INTERNAL_SHARED_SECRET) {
+    const msg = "INTERNAL_SHARED_SECRET não configurado — usando fallback.";
     console.log("Melhor Envio:", msg);
     if (debug) debug.motivo = msg;
     return null;
   }
   try {
-    const r = await fetch("https://melhorenvio.com.br/api/v2/me/shipment/calculate", {
+    const proxyUrl = env.SITE_URL.replace(/\/$/, "") + "/api/melhor-envio";
+    const r = await fetch(proxyUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${env.MELHOR_ENVIO_TOKEN}`,
         "Content-Type": "application/json",
-        Accept: "application/json",
-        "User-Agent": "Santinos Pepper Sauces (contato@santinos.com.br)",
+        "x-internal-secret": env.INTERNAL_SHARED_SECRET,
       },
       body: JSON.stringify({
-        from: { postal_code: env.ORIGEM_CEP },
-        to: { postal_code: cepDestino },
-        package: {
-          height: pacote.altura,
-          width: pacote.largura,
-          length: pacote.comprimento,
-          weight: pacote.peso,
+        cepDestino,
+        pacote: {
+          altura: pacote.altura,
+          largura: pacote.largura,
+          comprimento: pacote.comprimento,
+          peso: pacote.peso,
         },
       }),
     });
     if (!r.ok) {
       const corpo = await r.text().catch(() => "");
-      const headersObj = {};
-      r.headers.forEach((v, k) => { headersObj[k] = v; });
-      const msg = `API respondeu ${r.status} — usando fallback. Corpo: ${corpo.slice(0, 300)}`;
-      console.log("Melhor Envio:", msg, JSON.stringify(headersObj));
-      if (debug) {
-        debug.motivo = msg;
-        debug.headersResposta = headersObj;
-        debug.tamanhoToken = env.MELHOR_ENVIO_TOKEN ? env.MELHOR_ENVIO_TOKEN.length : 0;
-      }
+      const msg = `Proxy Vercel respondeu ${r.status} — usando fallback. Corpo: ${corpo.slice(0, 300)}`;
+      console.log("Melhor Envio:", msg);
+      if (debug) debug.motivo = msg;
       return null;
     }
     const cotacoes = await r.json();

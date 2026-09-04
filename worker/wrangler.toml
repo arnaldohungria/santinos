@@ -8,9 +8,11 @@ SITE_URL = "https://www.santinos.com.br"
 ALLOWED_ORIGIN = "https://www.santinos.com.br"
 # NOTIFY_EMAIL = "contato@santinos.com.br"
 
-# CEP de onde os pedidos saem (Itapetininga), só dígitos.
-ORIGEM_CEP = "18208672"
-
 # Secrets (NÃO vão aqui): configurar com
 #   npx wrangler secret put MP_ACCESS_TOKEN
-#   npx wrangler secret put MELHOR_ENVIO_TOKEN
+#   npx wrangler secret put INTERNAL_SHARED_SECRET
+#
+# INTERNAL_SHARED_SECRET precisa ser IGUAL ao valor configurado na Vercel
+# (variável INTERNAL_SHARED_SECRET do projeto, usada por api/melhor-envio.js).
+# O MELHOR_ENVIO_TOKEN e o ORIGEM_CEP não ficam mais aqui — foram pra Vercel,
+# veja api/melhor-envio.js.

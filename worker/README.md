@@ -12,7 +12,7 @@ Hospedado no **Cloudflare Workers** (free tier). Mesmo padrão do projeto Academ
 | Método | Rota | O que faz |
 |---|---|---|
 | GET | `/health` | teste de vida |
-| POST | `/calcular-frete` | corpo `{ cep, uf, itens }` → `{ valor, rotulo }` — cotação em tempo real, chamada pelo checkout enquanto o cliente digita o CEP |
+| POST | `/calcular-frete` | corpo `{ cep, uf, itens }` → `{ opcoes: [...] }` — cotação em tempo real, chamada pelo checkout enquanto o cliente digita o CEP |
 | POST | `/criar-preferencia` | corpo `{ itens, frete:{cep,uf}, comprador }` → `{ init_point }` |
 | POST | `/webhook` | notificação de pagamento do Mercado Pago (hoje só loga e responde 200) |
 
@@ -29,8 +29,9 @@ npm install            # instala o wrangler (devDependency)
 # Access Token de PRODUÇÃO do Mercado Pago (painel de desenvolvedor da conta Santino's):
 npx wrangler secret put MP_ACCESS_TOKEN
 
-# Token do Melhor Envio (Configurações -> Integrações -> Gerar Token, escopo shipping-calculate):
-npx wrangler secret put MELHOR_ENVIO_TOKEN
+# Segredo compartilhado com o proxy de frete da Vercel (api/melhor-envio.js) —
+# mesmo valor cadastrado lá em INTERNAL_SHARED_SECRET:
+npx wrangler secret put INTERNAL_SHARED_SECRET
 
 # Deploy
 npx wrangler deploy
@@ -42,11 +43,13 @@ Copie essa URL para `LOJA_CONFIG.workerUrl` no arquivo `loja.js` do site.
 
 ### Variáveis (já em `wrangler.toml`, ajuste se o domínio mudar)
 
-- `SITE_URL` — base do site, usada nas `back_urls` de retorno (`/pedido.html`).
+- `SITE_URL` — base do site, usada nas `back_urls` de retorno (`/pedido.html`)
+  e para achar o proxy de frete (`SITE_URL + /api/melhor-envio`).
 - `ALLOWED_ORIGIN` — origem liberada no CORS (igual ao `SITE_URL`).
 - `NOTIFY_EMAIL` — (opcional, ainda não usado) e-mail para aviso de pedido.
-- `ORIGEM_CEP` — CEP de onde os pedidos saem (Itapetininga), já com o CEP real
-  do Arnaldo (18208-672).
+
+O `MELHOR_ENVIO_TOKEN` e o `ORIGEM_CEP` **não ficam mais neste Worker** — veja
+"Como funciona o frete" abaixo.
 
 ### Teste local
 
@@ -60,18 +63,20 @@ Para testar `/criar-preferencia` e `/calcular-frete` localmente, crie `worker/.d
 
 ```
 MP_ACCESS_TOKEN=APP_USR-...conta-de-teste-ou-producao...
-MELHOR_ENVIO_TOKEN=...token do Melhor Envio...
+INTERNAL_SHARED_SECRET=...mesmo valor da Vercel...
 ```
 
-(esse arquivo está no `.gitignore`).
+(esse arquivo está no `.gitignore`). Como o `/calcular-frete` local chama o
+proxy em `SITE_URL` (produção, na Vercel), a cotação real funciona mesmo
+testando o Worker localmente.
 
 ## Como funciona o frete
 
 1. **Itapetininga** (faixa de CEP) → grátis, sempre — sem chamar API nenhuma.
 2. Fora disso → cota em tempo real no **Melhor Envio** (`/shipment/calculate`,
    rota gratuita, não gera etiqueta nem mexe em saldo) usando a caixa da tabela
-   `PACOTES` (peso/dimensões por quantidade de frascos) e devolve a **opção mais
-   barata** entre as transportadoras retornadas.
+   `PACOTES` (peso/dimensões por quantidade de frascos) e devolve até 5 opções
+   (mais barata primeiro) pro cliente escolher.
 3. Se a chamada falhar (API fora do ar, token não configurado, CEP não
    atendido) → cai na **tabela fixa por região** (`FRETE_REGIOES`) como rede de
    segurança, marcada como "(estimado)".
@@ -80,10 +85,21 @@ MELHOR_ENVIO_TOKEN=...token do Melhor Envio...
 cima) informado pelo Arnaldo — ainda é estimativa de caixa/plástico bolha, não
 pesagem real. Calibrar quando ele pesar uma caixa de verdade.
 
-**Segurança:** o Worker só usa o escopo `shipping-calculate` do token do
-Melhor Envio (cotação, sem custo). Nunca chama `shipping-generate` /
-`shipping-checkout` / `shipping-cancel` — geração de etiqueta e pagamento de
-frete continuam manuais, no painel do Melhor Envio.
+**Por que a cotação passa pela Vercel:** chamando o Melhor Envio diretamente
+DAQUI (Cloudflare Worker), a API dele devolve `401 Unauthenticated` mesmo com
+o token certo — as duas APIs ficam atrás da Cloudflare, e a proteção do lado
+do Melhor Envio parece bloquear tráfego Worker-a-Worker. A chamada real ao
+Melhor Envio foi movida pra `api/melhor-envio.js` na raiz do site (Vercel
+Serverless Function) — o mesmo fetch, de lá, funciona normalmente. Esse Worker
+só chama esse proxy e faz o resto (filtrar, ordenar, revalidar preço) como
+antes. O proxy é protegido por `INTERNAL_SHARED_SECRET` (header
+`x-internal-secret`) pra ninguém de fora conseguir consumir a cota de
+cotações do Melhor Envio.
+
+**Segurança:** o token do Melhor Envio (configurado na Vercel, não aqui) só
+tem o escopo `shipping-calculate` (cotação, sem custo). Nunca é chamado
+`shipping-generate` / `shipping-checkout` / `shipping-cancel` — geração de
+etiqueta e pagamento de frete continuam manuais, no painel do Melhor Envio.
 
 ## Pendências (v2)
 
