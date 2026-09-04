@@ -36,7 +36,7 @@ const LOJA_CONFIG = {
 
   // URL pública do Cloudflare Worker que cria a preferência no Mercado Pago.
   // Vazio => o checkout mostra "pagamento em configuração" e não cobra nada.
-  workerUrl: "",
+  workerUrl: "https://santinos-checkout.santinos.workers.dev",
 
   // Galeria do Instagram na home. ID do feed do Behold.so
   // (behold.so -> seu feed -> "Feed ID"). Vazio => a galeria não aparece,
@@ -456,12 +456,16 @@ function initCheckout() {
       },
     };
 
-    if (!LOJA_CONFIG.workerUrl) {
+    function avisoPagamentoEmConfiguracao() {
       aviso.innerHTML =
         "<strong>Pagamento em configuração.</strong> A loja ainda não está processando pedidos online. " +
         'Finalize pelo WhatsApp: <a href="https://wa.me/5515998569761">(15) 99856-9761</a>.';
       btn.disabled = false;
       btn.textContent = "Pagar com Mercado Pago";
+    }
+
+    if (!LOJA_CONFIG.workerUrl) {
+      avisoPagamentoEmConfiguracao();
       return;
     }
 
@@ -471,6 +475,12 @@ function initCheckout() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(pedido),
       });
+      // 501 = Worker no ar, mas sem o token do Mercado Pago configurado ainda:
+      // mesmo aviso amigável de quando não há workerUrl, em vez do erro cru.
+      if (r.status === 501) {
+        avisoPagamentoEmConfiguracao();
+        return;
+      }
       const d = await r.json();
       if (!r.ok || !d.init_point) throw new Error(d.erro || "Falha ao criar o pagamento.");
       // Guarda um resumo local para a página de retorno.

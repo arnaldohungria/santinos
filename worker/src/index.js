@@ -305,7 +305,16 @@ async function criarPreferencia(req, env) {
     body: JSON.stringify(preference),
   });
 
-  const data = await r.json();
+  // O Mercado Pago normalmente responde JSON, mas token inválido/expirado,
+  // erro de rede ou um bloqueio no meio do caminho pode devolver HTML — sem
+  // isso aqui, r.json() lança uma exceção não tratada e o Cloudflare mostra
+  // a página de erro genérica pro cliente em vez de uma mensagem decente.
+  let data;
+  try {
+    data = await r.json();
+  } catch {
+    return json({ erro: "Mercado Pago não respondeu como esperado. Tente novamente." }, 502, env);
+  }
   if (!r.ok) {
     return json({ erro: "Mercado Pago recusou a preferência.", detalhe: data }, 502, env);
   }
@@ -345,28 +354,41 @@ async function webhook(req, env) {
 
 export default {
   async fetch(req, env) {
-    const url = new URL(req.url);
-
-    if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: cors(env) });
+    try {
+      return await handleRequest(req, env);
+    } catch (e) {
+      // Rede de segurança: qualquer exceção não prevista aqui dentro (bug,
+      // API externa se comportando de forma inesperada, etc.) vira uma
+      // resposta JSON decente em vez da página de erro genérica da
+      // Cloudflare — o cliente nunca deveria ver isso no checkout.
+      console.log("erro não tratado:", e?.stack || e);
+      return json({ erro: "Erro interno no Worker. Tente novamente em instantes." }, 500, env);
     }
-
-    if (url.pathname === "/health") {
-      return json({ ok: true, servico: "santinos-checkout" }, 200, env);
-    }
-
-    if (url.pathname === "/calcular-frete" && req.method === "POST") {
-      return calcularFreteEndpoint(req, env);
-    }
-
-    if (url.pathname === "/criar-preferencia" && req.method === "POST") {
-      return criarPreferencia(req, env);
-    }
-
-    if (url.pathname === "/webhook") {
-      return webhook(req, env);
-    }
-
-    return json({ erro: "Rota não encontrada." }, 404, env);
   },
 };
+
+async function handleRequest(req, env) {
+  const url = new URL(req.url);
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: cors(env) });
+  }
+
+  if (url.pathname === "/health") {
+    return json({ ok: true, servico: "santinos-checkout" }, 200, env);
+  }
+
+  if (url.pathname === "/calcular-frete" && req.method === "POST") {
+    return calcularFreteEndpoint(req, env);
+  }
+
+  if (url.pathname === "/criar-preferencia" && req.method === "POST") {
+    return criarPreferencia(req, env);
+  }
+
+  if (url.pathname === "/webhook") {
+    return webhook(req, env);
+  }
+
+  return json({ erro: "Rota não encontrada." }, 404, env);
+}
