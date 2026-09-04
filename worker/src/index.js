@@ -1,20 +1,25 @@
-/* Santino's — Worker de checkout (Mercado Pago Checkout Pro)
+/* Santino's — Worker de checkout (Mercado Pago Checkout Pro + frete Melhor Envio)
  *
  * Endpoints:
  *   GET  /health              -> teste de vida
- *   POST /criar-preferencia   -> recebe o carrinho, valida no servidor, cria a
- *                                preferência no Mercado Pago e devolve { init_point }
+ *   POST /calcular-frete      -> recebe { cep, uf, itens }, devolve { valor, rotulo }
+ *                                (cotação real via Melhor Envio; cai pra tabela fixa
+ *                                se a API não responder ou não estiver configurada)
+ *   POST /criar-preferencia   -> recebe o carrinho, valida no servidor, calcula o
+ *                                frete real e cria a preferência no Mercado Pago
  *   POST /webhook             -> recebe a notificação de pagamento do Mercado Pago
  *
  * Secrets/vars (wrangler secret put / wrangler.toml [vars]):
- *   MP_ACCESS_TOKEN  (secret)  Access Token de PRODUÇÃO do Mercado Pago
- *   SITE_URL         (var)     ex: https://www.santinos.com.br
- *   ALLOWED_ORIGIN   (var)     origem liberada no CORS (mesmo valor de SITE_URL)
- *   NOTIFY_EMAIL     (var)     (opcional) e-mail para aviso de pedido — TODO
+ *   MP_ACCESS_TOKEN     (secret)  Access Token de PRODUÇÃO do Mercado Pago
+ *   MELHOR_ENVIO_TOKEN  (secret)  Token de API do Melhor Envio (escopo shipping-calculate)
+ *   ORIGEM_CEP          (var)     CEP de onde os pedidos saem (Itapetininga) — sem traço
+ *   SITE_URL            (var)     ex: https://www.santinos.com.br
+ *   ALLOWED_ORIGIN      (var)     origem liberada no CORS (mesmo valor de SITE_URL)
+ *   NOTIFY_EMAIL        (var)     (opcional) e-mail para aviso de pedido — TODO
  *
  * ATENÇÃO: a tabela PRECOS e a lógica de frete abaixo são a CÓPIA-VERDADE.
- * O arquivo loja.js do site tem os mesmos números só para exibir. Se mudar
- * preço/frete, mude nos DOIS lugares. Aqui é o que efetivamente cobra.
+ * O arquivo loja.js do site tem os mesmos números só para exibir/estimar. Se
+ * mudar preço/frete, mude nos DOIS lugares. Aqui é o que efetivamente cobra.
  */
 
 // Preços em CENTAVOS. Manter IGUAL ao loja.js. Preço atual: R$ 19,90 (2026-08).
@@ -24,7 +29,9 @@ const PRECOS = {
   "extra-forte": { nome: "Santino's Extra Forte", preco: 1990 },
 };
 
-// Frete fixo por região, em CENTAVOS. >>> PLACEHOLDER <<<
+// Frete fixo por região, em CENTAVOS — usado só como FALLBACK se o Melhor
+// Envio não responder (API fora do ar, sem token configurado, CEP não
+// atendido pelas transportadoras cotadas). >>> ainda placeholder <<<
 const FRETE_REGIOES = {
   "Sudeste": 1500,
   "Sul": 2200,
@@ -35,6 +42,24 @@ const FRETE_REGIOES = {
 
 const ITAPETININGA = { min: 18200000, max: 18219999 };
 const FRETE_GRATIS_ACIMA = null; // centavos ou null
+
+// Caixa de envio por quantidade total de frascos no pedido — cm e kg.
+// Frasco de 60ml cheio ≈ 150g (arredondado pra cima de propósito).
+// >>> estimativa do Arnaldo, calibrar quando ele pesar uma caixa real <<<
+const PACOTES = [
+  { max: 1, altura: 8,  largura: 8,  comprimento: 16, peso: 0.25 },
+  { max: 2, altura: 8,  largura: 12, comprimento: 16, peso: 0.45 },
+  { max: 3, altura: 8,  largura: 16, comprimento: 16, peso: 0.65 },
+  { max: 6, altura: 12, largura: 16, comprimento: 20, peso: 1.25 },
+];
+
+function escolherPacote(qtdTotal) {
+  const base = PACOTES.find((p) => qtdTotal <= p.max) || PACOTES[PACOTES.length - 1];
+  if (qtdTotal <= 6) return base;
+  // pedido maior que o maior kit calculado: extrapola o peso, mantém a caixa maior
+  const extra = qtdTotal - 6;
+  return { ...base, peso: +(base.peso + extra * 0.2).toFixed(2) };
+}
 
 const UF_REGIAO = {
   AC: "Norte", AP: "Norte", AM: "Norte", PA: "Norte", RO: "Norte", RR: "Norte", TO: "Norte",
@@ -60,7 +85,53 @@ function json(data, status, env) {
   });
 }
 
-function calcularFrete(cepDigitos, uf, subtotal) {
+// Cotação real via Melhor Envio. Só usa a rota /shipment/calculate (grátis,
+// sem custo, sem gerar etiqueta nem mexer em saldo) — nunca chama
+// shipping-generate/checkout/cancel a partir daqui.
+async function cotarMelhorEnvio(env, cepDestino, pacote) {
+  if (!env.MELHOR_ENVIO_TOKEN || !env.ORIGEM_CEP) return null;
+  try {
+    const r = await fetch("https://melhorenvio.com.br/api/v2/me/shipment/calculate", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.MELHOR_ENVIO_TOKEN}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "User-Agent": "Santinos Pepper Sauces (contato@santinos.com.br)",
+      },
+      body: JSON.stringify({
+        from: { postal_code: env.ORIGEM_CEP },
+        to: { postal_code: cepDestino },
+        package: {
+          height: pacote.altura,
+          width: pacote.largura,
+          length: pacote.comprimento,
+          weight: pacote.peso,
+        },
+      }),
+    });
+    if (!r.ok) return null;
+    const cotacoes = await r.json();
+    if (!Array.isArray(cotacoes)) return null;
+
+    const validas = cotacoes
+      .filter((c) => c && !c.error && c.price)
+      .map((c) => ({
+        valor: Math.round(parseFloat(c.price) * 100),
+        rotulo: `${c.company?.name || ""} ${c.name || ""}`.trim(),
+      }))
+      .filter((c) => Number.isFinite(c.valor) && c.valor > 0)
+      .sort((a, b) => a.valor - b.valor);
+
+    return validas[0] || null;
+  } catch {
+    return null; // API fora do ar / erro de rede -> quem chamou cai no fallback
+  }
+}
+
+// Orquestrador: Itapetininga grátis -> frete grátis por valor -> cotação real
+// (Melhor Envio) -> fallback pra tabela fixa por região se a cotação falhar.
+async function calcularFrete(env, cepDigitos, uf, subtotal, qtdTotal) {
   const cepNum = parseInt(cepDigitos, 10);
   if (Number.isFinite(cepNum) && cepNum >= ITAPETININGA.min && cepNum <= ITAPETININGA.max) {
     return { valor: 0, rotulo: "Entrega local em Itapetininga" };
@@ -68,9 +139,43 @@ function calcularFrete(cepDigitos, uf, subtotal) {
   if (FRETE_GRATIS_ACIMA != null && subtotal >= FRETE_GRATIS_ACIMA) {
     return { valor: 0, rotulo: "Frete grátis" };
   }
+
+  const pacote = escolherPacote(Math.max(1, qtdTotal || 1));
+  const real = await cotarMelhorEnvio(env, cepDigitos, pacote);
+  if (real) return real;
+
   const regiao = UF_REGIAO[(uf || "").toUpperCase()];
   if (!regiao || FRETE_REGIOES[regiao] == null) return null;
-  return { valor: FRETE_REGIOES[regiao], rotulo: `Frete — ${regiao}` };
+  return { valor: FRETE_REGIOES[regiao], rotulo: `Frete — ${regiao} (estimado)` };
+}
+
+// POST /calcular-frete — cotação em tempo real pro checkout (antes de pagar).
+async function calcularFreteEndpoint(req, env) {
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ erro: "JSON inválido." }, 400, env);
+  }
+
+  const itensReq = Array.isArray(body.itens) ? body.itens : [];
+  let subtotal = 0;
+  let qtdTotal = 0;
+  for (const it of itensReq) {
+    const prod = PRECOS[it.id];
+    const qtd = Math.floor(Number(it.qtd));
+    if (!prod || !Number.isFinite(qtd) || qtd < 1) continue;
+    subtotal += prod.preco * qtd;
+    qtdTotal += qtd;
+  }
+
+  const cep = String(body.cep || "").replace(/\D/g, "");
+  const uf = String(body.uf || "");
+  if (cep.length !== 8) return json({ erro: "CEP inválido." }, 400, env);
+
+  const frete = await calcularFrete(env, cep, uf, subtotal, qtdTotal || 1);
+  if (!frete) return json({ erro: "Frete indisponível para este CEP." }, 400, env);
+  return json(frete, 200, env);
 }
 
 async function criarPreferencia(req, env) {
@@ -91,6 +196,7 @@ async function criarPreferencia(req, env) {
   // Revalida itens e recalcula subtotal pelo servidor (ignora qualquer preço vindo do cliente).
   const itensMP = [];
   let subtotal = 0;
+  let qtdTotal = 0;
   for (const it of itensReq) {
     const prod = PRECOS[it.id];
     const qtd = Math.floor(Number(it.qtd));
@@ -98,6 +204,7 @@ async function criarPreferencia(req, env) {
       return json({ erro: `Item inválido: ${it.id}` }, 400, env);
     }
     subtotal += prod.preco * qtd;
+    qtdTotal += qtd;
     itensMP.push({
       id: it.id,
       title: prod.nome,
@@ -109,7 +216,7 @@ async function criarPreferencia(req, env) {
 
   const cep = String(body?.frete?.cep || "").replace(/\D/g, "");
   const uf = String(body?.frete?.uf || "");
-  const frete = calcularFrete(cep, uf, subtotal);
+  const frete = await calcularFrete(env, cep, uf, subtotal, qtdTotal);
   if (!frete) return json({ erro: "Frete indisponível para o CEP informado." }, 400, env);
   if (frete.valor > 0) {
     itensMP.push({
@@ -208,6 +315,10 @@ export default {
 
     if (url.pathname === "/health") {
       return json({ ok: true, servico: "santinos-checkout" }, 200, env);
+    }
+
+    if (url.pathname === "/calcular-frete" && req.method === "POST") {
+      return calcularFreteEndpoint(req, env);
     }
 
     if (url.pathname === "/criar-preferencia" && req.method === "POST") {
