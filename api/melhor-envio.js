@@ -1,10 +1,13 @@
 /* Santino's — proxy de cotação Melhor Envio (Vercel Serverless Function)
  *
- * Existe só porque o Cloudflare Worker do checkout, ao chamar a API do
- * Melhor Envio diretamente, leva 401 "Unauthenticated" (Melhor Envio também
- * roda atrás da Cloudflare, e algo na proteção do lado deles bloqueia
- * chamadas Worker->Worker mesmo com o token correto). Rodando esse mesmo
- * fetch aqui na Vercel, o problema não ocorre.
+ * Existe porque o Cloudflare Worker do checkout, ao chamar a API do Melhor
+ * Envio diretamente, levava 401 "Unauthenticated" mesmo com o token
+ * (aparentemente) certo. Causa raiz não 100% confirmada — pode ter sido o
+ * mesmo problema documentado no worker/README.md (token colado com
+ * caracteres de mascaramento de campo de senha) em vez de um bloqueio real
+ * de tráfego Worker-a-Worker entre duas APIs atrás da Cloudflare. De todo
+ * jeito, rodando esse fetch aqui na Vercel funciona, e centralizar essa
+ * chamada num só lugar facilita revisar/trocar o token no futuro.
  *
  * Rota: POST /api/melhor-envio
  * Body: { cepDestino, pacote: { altura, largura, comprimento, peso } }

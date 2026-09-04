@@ -96,15 +96,19 @@ antes. O proxy é protegido por `INTERNAL_SHARED_SECRET` (header
 `x-internal-secret`) pra ninguém de fora conseguir consumir a cota de
 cotações do Melhor Envio.
 
-**Por que `FRETE_PROXY_URL` aponta pro `*.vercel.app`, não pro `santinos.com.br`:**
-descoberto na prática — chamando `www.santinos.com.br/api/melhor-envio` a
-partir do Worker, a resposta vinha com headers de Cloudflare (`server:
-cloudflare`, `cf-ray`) e um 502, mesmo o domínio tendo DNS 100% na Vercel
-(`ns1/ns2.vercel-dns.com`) e nenhuma zona Cloudflare cadastrada em nenhuma
-conta. Chamando o domínio bruto `*.vercel.app` que a Vercel atribui ao
-projeto, sem passar pelo domínio customizado, o problema não ocorre. Causa
-raiz exata não confirmada (provavelmente alguma camada de roteamento/anti-abuso
-específica de domínio customizado), mas o contorno funciona de forma estável.
+`FRETE_PROXY_URL` aponta pro domínio `*.vercel.app` que a Vercel atribui ao
+projeto, não pro `santinos.com.br` customizado — funciona nos dois, mas o
+`*.vercel.app` foi o endereço usado durante o diagnóstico e ficou assim.
+
+**Nota de diagnóstico (histórico):** logo depois de criar o proxy, ele voltava
+`502` sempre que o pedido continha um pacote de verdade (erro genérico, sem
+detalhe). A causa real não era Cloudflare nem Vercel — era o valor salvo em
+`MELHOR_ENVIO_TOKEN` na Vercel, que continha caracteres de mascaramento (um
+"•" de campo de senha) em vez do token de verdade, provavelmente colado sem
+querer de algum lugar que mostrava o token oculto. `fetch()` não consegue
+montar o header `Authorization` com esse caractere e lança uma exceção, que a
+Vercel devolve como 502. Corrigido gerando um token novo e colando direto do
+painel do Melhor Envio.
 
 **Segurança:** o token do Melhor Envio (configurado na Vercel, não aqui) só
 tem o escopo `shipping-calculate` (cotação, sem custo). Nunca é chamado

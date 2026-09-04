@@ -105,24 +105,15 @@ function json(data, status, env) {
 // site já está hospedado), funciona normalmente. O proxy só repassa a
 // cotação bruta; toda a lógica de filtro/ordenação continua aqui.
 //
-// IMPORTANTE: usa FRETE_PROXY_URL (o domínio *.vercel.app do projeto), não
-// SITE_URL (www.santinos.com.br). Testado e confirmado: chamando o domínio
-// customizado a partir do Worker, a resposta vem com headers de Cloudflare
-// (server: cloudflare, cf-ray) e cai num 502 — mesmo o domínio usando DNS da
-// Vercel (ns1/ns2.vercel-dns.com) e funcionando normal fora do Worker.
-// Chamando o domínio *.vercel.app bruto direto, sem passar pelo customizado,
-// o problema não ocorre.
-async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
+// Usa FRETE_PROXY_URL (o domínio *.vercel.app do projeto), não SITE_URL
+// (www.santinos.com.br) — ver README para o porquê.
+async function cotarMelhorEnvio(env, cepDestino, pacote) {
   if (!env.FRETE_PROXY_URL) {
-    const msg = "FRETE_PROXY_URL não configurado — usando fallback.";
-    console.log("Melhor Envio:", msg);
-    if (debug) debug.motivo = msg;
+    console.log("Melhor Envio: FRETE_PROXY_URL não configurado — usando fallback.");
     return null;
   }
   if (!env.INTERNAL_SHARED_SECRET) {
-    const msg = "INTERNAL_SHARED_SECRET não configurado — usando fallback.";
-    console.log("Melhor Envio:", msg);
-    if (debug) debug.motivo = msg;
+    console.log("Melhor Envio: INTERNAL_SHARED_SECRET não configurado — usando fallback.");
     return null;
   }
   try {
@@ -145,23 +136,12 @@ async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
     });
     if (!r.ok) {
       const corpo = await r.text().catch(() => "");
-      const headersObj = {};
-      r.headers.forEach((v, k) => { headersObj[k] = v; });
-      const msg = `Proxy Vercel respondeu ${r.status} — usando fallback. Corpo: ${corpo.slice(0, 300)}`;
-      console.log("Melhor Envio:", msg, JSON.stringify(headersObj));
-      if (debug) {
-        debug.motivo = msg;
-        debug.statusText = r.statusText;
-        debug.headersResposta = headersObj;
-        debug.proxyUrl = proxyUrl;
-      }
+      console.log(`Melhor Envio: proxy Vercel respondeu ${r.status} — usando fallback. Corpo: ${corpo.slice(0, 300)}`);
       return null;
     }
     const cotacoes = await r.json();
     if (!Array.isArray(cotacoes)) {
-      const msg = "resposta não é uma lista — usando fallback: " + JSON.stringify(cotacoes).slice(0, 300);
-      console.log("Melhor Envio:", msg);
-      if (debug) debug.motivo = msg;
+      console.log("Melhor Envio: resposta não é uma lista — usando fallback:", JSON.stringify(cotacoes).slice(0, 300));
       return null;
     }
 
@@ -182,15 +162,11 @@ async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
       .slice(0, 5);
 
     if (!validas.length) {
-      const msg = "nenhuma cotação válida devolvida — usando fallback: " + JSON.stringify(cotacoes).slice(0, 300);
-      console.log("Melhor Envio:", msg);
-      if (debug) debug.motivo = msg;
+      console.log("Melhor Envio: nenhuma cotação válida devolvida — usando fallback:", JSON.stringify(cotacoes).slice(0, 300));
     }
     return validas.length ? validas : null;
   } catch (e) {
-    const msg = "exceção na chamada — usando fallback: " + (e?.message || e);
-    console.log("Melhor Envio:", msg);
-    if (debug) debug.motivo = msg;
+    console.log("Melhor Envio: exceção na chamada — usando fallback:", e?.message || e);
     return null; // API fora do ar / erro de rede -> quem chamou cai no fallback
   }
 }
@@ -198,8 +174,7 @@ async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
 // Orquestrador: Itapetininga grátis -> frete grátis por valor -> cotações
 // reais (Melhor Envio, várias opções) -> fallback pra tabela fixa por região
 // se a cotação falhar. Sempre devolve uma LISTA (1 item nos casos fixos).
-// `debug`, se passado, recebe o motivo do fallback (diagnóstico temporário).
-async function calcularOpcoesFrete(env, cepDigitos, uf, subtotal, qtdTotal, debug) {
+async function calcularOpcoesFrete(env, cepDigitos, uf, subtotal, qtdTotal) {
   const cepNum = parseInt(cepDigitos, 10);
   if (Number.isFinite(cepNum) && cepNum >= ITAPETININGA.min && cepNum <= ITAPETININGA.max) {
     return [
@@ -217,7 +192,7 @@ async function calcularOpcoesFrete(env, cepDigitos, uf, subtotal, qtdTotal, debu
   }
 
   const pacote = escolherPacote(Math.max(1, qtdTotal || 1));
-  const reais = await cotarMelhorEnvio(env, cepDigitos, pacote, debug);
+  const reais = await cotarMelhorEnvio(env, cepDigitos, pacote);
   if (reais) return reais;
 
   const regiao = UF_REGIAO[(uf || "").toUpperCase()];
@@ -257,12 +232,9 @@ async function calcularFreteEndpoint(req, env) {
   const uf = String(body.uf || "");
   if (cep.length !== 8) return json({ erro: "CEP inválido." }, 400, env);
 
-  // TODO(temporário): _debug ajuda a diagnosticar por que caiu no fallback.
-  // Tirar depois que o Melhor Envio estiver 100% confirmado em produção.
-  const debug = {};
-  const opcoes = await calcularOpcoesFrete(env, cep, uf, subtotal, qtdTotal || 1, debug);
-  if (!opcoes) return json({ erro: "Frete indisponível para este CEP.", _debug: debug }, 400, env);
-  return json({ opcoes, _debug: debug.motivo ? debug : undefined }, 200, env);
+  const opcoes = await calcularOpcoesFrete(env, cep, uf, subtotal, qtdTotal || 1);
+  if (!opcoes) return json({ erro: "Frete indisponível para este CEP." }, 400, env);
+  return json({ opcoes }, 200, env);
 }
 
 async function criarPreferencia(req, env) {
@@ -432,33 +404,6 @@ async function handleRequest(req, env) {
 
   if (url.pathname === "/health") {
     return json({ ok: true, servico: "santinos-checkout" }, 200, env);
-  }
-
-  // TODO(temporário): diagnóstico do bug do 502 no fetch de saída — testa se
-  // o problema é geral (qualquer fetch do Worker) ou específico da Vercel.
-  // Remover depois de identificada a causa.
-  if (url.pathname === "/debug-fetch-teste") {
-    const alvo = url.searchParams.get("url") || "https://example.com";
-    const metodo = url.searchParams.get("method") || "GET";
-    const comSegredo = url.searchParams.get("segredo") === "1";
-    const comPacote = url.searchParams.get("pacote") === "1";
-    try {
-      const opts = { method: metodo };
-      if (metodo === "POST") {
-        opts.headers = { "Content-Type": "application/json" };
-        if (comSegredo) opts.headers["x-internal-secret"] = env.INTERNAL_SHARED_SECRET || "";
-        opts.body = comPacote
-          ? JSON.stringify({ cepDestino: "01310100", pacote: { altura: 8, largura: 12, comprimento: 16, peso: 0.45 } })
-          : "{}";
-      }
-      const r = await fetch(alvo, opts);
-      const corpo = await r.text();
-      const headersObj = {};
-      r.headers.forEach((v, k) => { headersObj[k] = v; });
-      return json({ alvo, metodo, status: r.status, headers: headersObj, corpo: corpo.slice(0, 200) }, 200, env);
-    } catch (e) {
-      return json({ alvo, metodo, excecao: e?.message || String(e) }, 200, env);
-    }
   }
 
   if (url.pathname === "/calcular-frete" && req.method === "POST") {
