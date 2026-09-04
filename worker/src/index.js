@@ -440,11 +440,16 @@ async function handleRequest(req, env) {
   if (url.pathname === "/debug-fetch-teste") {
     const alvo = url.searchParams.get("url") || "https://example.com";
     const metodo = url.searchParams.get("method") || "GET";
+    const comSegredo = url.searchParams.get("segredo") === "1";
+    const comPacote = url.searchParams.get("pacote") === "1";
     try {
       const opts = { method: metodo };
       if (metodo === "POST") {
         opts.headers = { "Content-Type": "application/json" };
-        opts.body = "{}";
+        if (comSegredo) opts.headers["x-internal-secret"] = env.INTERNAL_SHARED_SECRET || "";
+        opts.body = comPacote
+          ? JSON.stringify({ cepDestino: "01310100", pacote: { altura: 8, largura: 12, comprimento: 16, peso: 0.45 } })
+          : "{}";
       }
       const r = await fetch(alvo, opts);
       const corpo = await r.text();
