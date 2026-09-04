@@ -95,13 +95,17 @@ function json(data, status, env) {
 // sem custo, sem gerar etiqueta nem mexer em saldo) — nunca chama
 // shipping-generate/checkout/cancel a partir daqui. Devolve até 5 opções
 // (mais barata primeiro) pro cliente escolher, não só a mais barata.
-async function cotarMelhorEnvio(env, cepDestino, pacote) {
+async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
   if (!env.MELHOR_ENVIO_TOKEN) {
-    console.log("Melhor Envio: MELHOR_ENVIO_TOKEN não configurado — usando fallback.");
+    const msg = "MELHOR_ENVIO_TOKEN não configurado — usando fallback.";
+    console.log("Melhor Envio:", msg);
+    if (debug) debug.motivo = msg;
     return null;
   }
   if (!env.ORIGEM_CEP) {
-    console.log("Melhor Envio: ORIGEM_CEP não configurado — usando fallback.");
+    const msg = "ORIGEM_CEP não configurado — usando fallback.";
+    console.log("Melhor Envio:", msg);
+    if (debug) debug.motivo = msg;
     return null;
   }
   try {
@@ -126,12 +130,16 @@ async function cotarMelhorEnvio(env, cepDestino, pacote) {
     });
     if (!r.ok) {
       const corpo = await r.text().catch(() => "");
-      console.log(`Melhor Envio: API respondeu ${r.status} — usando fallback. Corpo: ${corpo.slice(0, 300)}`);
+      const msg = `API respondeu ${r.status} — usando fallback. Corpo: ${corpo.slice(0, 300)}`;
+      console.log("Melhor Envio:", msg);
+      if (debug) debug.motivo = msg;
       return null;
     }
     const cotacoes = await r.json();
     if (!Array.isArray(cotacoes)) {
-      console.log("Melhor Envio: resposta não é uma lista — usando fallback.", JSON.stringify(cotacoes).slice(0, 300));
+      const msg = "resposta não é uma lista — usando fallback: " + JSON.stringify(cotacoes).slice(0, 300);
+      console.log("Melhor Envio:", msg);
+      if (debug) debug.motivo = msg;
       return null;
     }
 
@@ -152,11 +160,15 @@ async function cotarMelhorEnvio(env, cepDestino, pacote) {
       .slice(0, 5);
 
     if (!validas.length) {
-      console.log("Melhor Envio: nenhuma cotação válida devolvida — usando fallback.", JSON.stringify(cotacoes).slice(0, 300));
+      const msg = "nenhuma cotação válida devolvida — usando fallback: " + JSON.stringify(cotacoes).slice(0, 300);
+      console.log("Melhor Envio:", msg);
+      if (debug) debug.motivo = msg;
     }
     return validas.length ? validas : null;
   } catch (e) {
-    console.log("Melhor Envio: exceção na chamada — usando fallback.", e?.message || e);
+    const msg = "exceção na chamada — usando fallback: " + (e?.message || e);
+    console.log("Melhor Envio:", msg);
+    if (debug) debug.motivo = msg;
     return null; // API fora do ar / erro de rede -> quem chamou cai no fallback
   }
 }
@@ -164,7 +176,8 @@ async function cotarMelhorEnvio(env, cepDestino, pacote) {
 // Orquestrador: Itapetininga grátis -> frete grátis por valor -> cotações
 // reais (Melhor Envio, várias opções) -> fallback pra tabela fixa por região
 // se a cotação falhar. Sempre devolve uma LISTA (1 item nos casos fixos).
-async function calcularOpcoesFrete(env, cepDigitos, uf, subtotal, qtdTotal) {
+// `debug`, se passado, recebe o motivo do fallback (diagnóstico temporário).
+async function calcularOpcoesFrete(env, cepDigitos, uf, subtotal, qtdTotal, debug) {
   const cepNum = parseInt(cepDigitos, 10);
   if (Number.isFinite(cepNum) && cepNum >= ITAPETININGA.min && cepNum <= ITAPETININGA.max) {
     return [
@@ -182,7 +195,7 @@ async function calcularOpcoesFrete(env, cepDigitos, uf, subtotal, qtdTotal) {
   }
 
   const pacote = escolherPacote(Math.max(1, qtdTotal || 1));
-  const reais = await cotarMelhorEnvio(env, cepDigitos, pacote);
+  const reais = await cotarMelhorEnvio(env, cepDigitos, pacote, debug);
   if (reais) return reais;
 
   const regiao = UF_REGIAO[(uf || "").toUpperCase()];
@@ -222,9 +235,12 @@ async function calcularFreteEndpoint(req, env) {
   const uf = String(body.uf || "");
   if (cep.length !== 8) return json({ erro: "CEP inválido." }, 400, env);
 
-  const opcoes = await calcularOpcoesFrete(env, cep, uf, subtotal, qtdTotal || 1);
-  if (!opcoes) return json({ erro: "Frete indisponível para este CEP." }, 400, env);
-  return json({ opcoes }, 200, env);
+  // TODO(temporário): _debug ajuda a diagnosticar por que caiu no fallback.
+  // Tirar depois que o Melhor Envio estiver 100% confirmado em produção.
+  const debug = {};
+  const opcoes = await calcularOpcoesFrete(env, cep, uf, subtotal, qtdTotal || 1, debug);
+  if (!opcoes) return json({ erro: "Frete indisponível para este CEP.", _debug: debug }, 400, env);
+  return json({ opcoes, _debug: debug.motivo ? debug : undefined }, 200, env);
 }
 
 async function criarPreferencia(req, env) {
