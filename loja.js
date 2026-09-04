@@ -129,24 +129,27 @@ function linhasCarrinho(c = lerCarrinho()) {
 }
 
 /* ---------- Frete ---------- */
-// Recebe CEP (só dígitos) e subtotal; devolve { valor, rotulo } ou null se região desconhecida.
+// Recebe CEP (só dígitos) e subtotal; devolve UMA opção { id, valor, rotulo,
+// prazo, retirada } ou null se região desconhecida. Usado como estimativa
+// local (sem Worker) e como fallback se o Worker não responder.
 function calcularFrete(cepDigitos, uf, sub) {
   const cepNum = parseInt(cepDigitos, 10);
   if (Number.isFinite(cepNum) && cepNum >= LOJA_CONFIG.itapetininga.min && cepNum <= LOJA_CONFIG.itapetininga.max) {
-    return { valor: 0, rotulo: "Entrega local em Itapetininga — grátis" };
+    return { id: "itapetininga", valor: 0, rotulo: "Entrega local em Itapetininga — grátis, em até 48h", prazo: 2, retirada: false };
   }
   if (LOJA_CONFIG.freteGratisAcima != null && sub >= LOJA_CONFIG.freteGratisAcima) {
-    return { valor: 0, rotulo: "Frete grátis" };
+    return { id: "gratis-valor", valor: 0, rotulo: "Frete grátis", prazo: null, retirada: false };
   }
   const regiao = UF_REGIAO[uf];
   if (!regiao || LOJA_CONFIG.freteRegioes[regiao] == null) return null;
-  return { valor: LOJA_CONFIG.freteRegioes[regiao], rotulo: `Frete — ${regiao}` };
+  return { id: `fallback-${regiao}`, valor: LOJA_CONFIG.freteRegioes[regiao], rotulo: `Frete — ${regiao} (estimado)`, prazo: null, retirada: false };
 }
 
-// Cotação de frete pro checkout: usa o Worker (cotação real, Melhor Envio)
-// quando configurado; se não tiver Worker ou a chamada falhar, cai na
-// estimativa local (tabela fixa por região) — mesma lógica de calcularFrete.
-async function obterFrete(cepDigitos, uf, sub, itens) {
+// Cotação de frete pro checkout: usa o Worker (cotação real, Melhor Envio,
+// com várias opções pro cliente escolher) quando configurado; se não tiver
+// Worker ou a chamada falhar, cai numa lista de 1 item com a estimativa
+// local (tabela fixa por região). SEMPRE devolve um array (ou null).
+async function obterOpcoesFrete(cepDigitos, uf, sub, itens) {
   if (LOJA_CONFIG.workerUrl) {
     try {
       const r = await fetch(LOJA_CONFIG.workerUrl.replace(/\/$/, "") + "/calcular-frete", {
@@ -156,13 +159,14 @@ async function obterFrete(cepDigitos, uf, sub, itens) {
       });
       if (r.ok) {
         const d = await r.json();
-        if (d && typeof d.valor === "number" && d.rotulo) return d;
+        if (d && Array.isArray(d.opcoes) && d.opcoes.length) return d.opcoes;
       }
     } catch {
       /* sem conexão com o Worker -> usa a estimativa local abaixo */
     }
   }
-  return calcularFrete(cepDigitos, uf, sub);
+  const local = calcularFrete(cepDigitos, uf, sub);
+  return local ? [local] : null;
 }
 
 /* ================================================================
@@ -309,7 +313,9 @@ function initCheckout() {
   const elSub = document.getElementById("ckSubtotal");
   const cep = form.elements.cep;
   const aviso = document.getElementById("ckAviso");
-  let freteAtual = null; // { valor, rotulo }
+  const opcoesBox = document.getElementById("ckFreteOpcoes");
+  let opcoesFrete = []; // lista devolvida pelo obterOpcoesFrete
+  let freteAtual = null; // opção escolhida: { id, valor, rotulo, prazo, retirada }
 
   // Resumo dos itens
   resumo.innerHTML = linhas
@@ -335,6 +341,44 @@ function initCheckout() {
   }
   pintarTotais();
 
+  // Mostra as opções de frete como rádio quando há mais de uma (cotação real
+  // do Worker); com uma só opção (Itapetininga, ou estimativa/fallback local)
+  // não precisa de escolha, só informa.
+  function renderOpcoesFrete() {
+    if (!opcoesFrete.length) {
+      opcoesBox.hidden = true;
+      opcoesBox.innerHTML = "";
+      return;
+    }
+    if (opcoesFrete.length === 1) {
+      opcoesBox.hidden = true;
+      opcoesBox.innerHTML = "";
+      return;
+    }
+    opcoesBox.hidden = false;
+    opcoesBox.innerHTML = opcoesFrete
+      .map((o, i) => {
+        const prazo = o.prazo ? `${o.prazo} dia${o.prazo > 1 ? "s" : ""} úteis` : "";
+        const retirada = o.retirada ? " · retirada em ponto" : "";
+        return `<label class="frete-opcao">
+          <input type="radio" name="freteOpcao" value="${o.id}" ${i === 0 ? "checked" : ""}>
+          <span class="frete-opcao-info">
+            <span class="frete-opcao-nome">${o.rotulo}</span>
+            <span class="frete-opcao-detalhe">${[prazo, retirada].filter(Boolean).join("") || "&nbsp;"}</span>
+          </span>
+          <span class="frete-opcao-preco">${o.valor === 0 ? "Grátis" : fmt(o.valor)}</span>
+        </label>`;
+      })
+      .join("");
+
+    opcoesBox.querySelectorAll('input[name="freteOpcao"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        freteAtual = opcoesFrete.find((o) => o.id === input.value) || opcoesFrete[0];
+        pintarTotais();
+      });
+    });
+  }
+
   async function buscarCep() {
     const digs = cep.value.replace(/\D/g, "");
     if (digs.length !== 8) return;
@@ -344,7 +388,9 @@ function initCheckout() {
       const d = await r.json();
       if (d.erro) {
         aviso.textContent = "CEP não encontrado. Confira o número.";
+        opcoesFrete = [];
         freteAtual = null;
+        renderOpcoesFrete();
         pintarTotais();
         return;
       }
@@ -354,12 +400,15 @@ function initCheckout() {
       form.elements.uf.value = d.uf || "";
 
       aviso.textContent = "Calculando frete…";
-      freteAtual = await obterFrete(
-        digs,
-        d.uf,
-        subtotal(),
-        linhas.map((l) => ({ id: l.id, qtd: l.qtd }))
-      );
+      opcoesFrete =
+        (await obterOpcoesFrete(
+          digs,
+          d.uf,
+          subtotal(),
+          linhas.map((l) => ({ id: l.id, qtd: l.qtd }))
+        )) || [];
+      freteAtual = opcoesFrete[0] || null;
+      renderOpcoesFrete();
       if (!freteAtual) {
         aviso.textContent = `Ainda não enviamos para ${d.uf}. Fale com a gente pelo WhatsApp.`;
       } else {
@@ -390,7 +439,7 @@ function initCheckout() {
 
     const pedido = {
       itens: linhas.map((l) => ({ id: l.id, qtd: l.qtd })),
-      frete: { cep: cep.value.replace(/\D/g, ""), uf: form.elements.uf.value },
+      frete: { cep: cep.value.replace(/\D/g, ""), uf: form.elements.uf.value, opcaoId: freteAtual.id },
       comprador: {
         nome: form.elements.nome.value.trim(),
         email: form.elements.email.value.trim(),

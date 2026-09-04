@@ -2,11 +2,12 @@
  *
  * Endpoints:
  *   GET  /health              -> teste de vida
- *   POST /calcular-frete      -> recebe { cep, uf, itens }, devolve { valor, rotulo }
- *                                (cotação real via Melhor Envio; cai pra tabela fixa
- *                                se a API não responder ou não estiver configurada)
- *   POST /criar-preferencia   -> recebe o carrinho, valida no servidor, calcula o
- *                                frete real e cria a preferência no Mercado Pago
+ *   POST /calcular-frete      -> recebe { cep, uf, itens }, devolve { opcoes: [...] }
+ *                                (várias cotações reais via Melhor Envio, mais barata
+ *                                primeiro; cai pra tabela fixa se a API não responder)
+ *   POST /criar-preferencia   -> recebe o carrinho + a opção de frete escolhida
+ *                                (frete.opcaoId), revalida tudo no servidor e cria a
+ *                                preferência no Mercado Pago
  *   POST /webhook             -> recebe a notificação de pagamento do Mercado Pago
  *
  * Secrets/vars (wrangler secret put / wrangler.toml [vars]):
@@ -42,6 +43,11 @@ const FRETE_REGIOES = {
 
 const ITAPETININGA = { min: 18200000, max: 18219999 };
 const FRETE_GRATIS_ACIMA = null; // centavos ou null
+
+// Nomes de serviço que indicam retirada em ponto físico (não entrega em
+// domicílio) — usado só pra rotular a opção com clareza pro cliente, nunca
+// pra excluí-la: quem decide é o cliente, escolhendo entre as opções.
+const RETIRADA_REGEX = /(ponto|locker|agência|agencia|retirada|caixa\s*postal)/i;
 
 // Caixa de envio por quantidade total de frascos no pedido — cm e kg.
 // Frasco de 60ml cheio ≈ 150g (arredondado pra cima de propósito).
@@ -87,7 +93,8 @@ function json(data, status, env) {
 
 // Cotação real via Melhor Envio. Só usa a rota /shipment/calculate (grátis,
 // sem custo, sem gerar etiqueta nem mexer em saldo) — nunca chama
-// shipping-generate/checkout/cancel a partir daqui.
+// shipping-generate/checkout/cancel a partir daqui. Devolve até 5 opções
+// (mais barata primeiro) pro cliente escolher, não só a mais barata.
 async function cotarMelhorEnvio(env, cepDestino, pacote) {
   if (!env.MELHOR_ENVIO_TOKEN || !env.ORIGEM_CEP) return null;
   try {
@@ -116,37 +123,61 @@ async function cotarMelhorEnvio(env, cepDestino, pacote) {
 
     const validas = cotacoes
       .filter((c) => c && !c.error && c.price)
-      .map((c) => ({
-        valor: Math.round(parseFloat(c.price) * 100),
-        rotulo: `${c.company?.name || ""} ${c.name || ""}`.trim(),
-      }))
+      .map((c) => {
+        const rotulo = `${c.company?.name || ""} ${c.name || ""}`.trim();
+        return {
+          id: String(c.id),
+          valor: Math.round(parseFloat(c.price) * 100),
+          rotulo,
+          prazo: Number.isFinite(c.delivery_time) ? c.delivery_time : null,
+          retirada: RETIRADA_REGEX.test(rotulo),
+        };
+      })
       .filter((c) => Number.isFinite(c.valor) && c.valor > 0)
-      .sort((a, b) => a.valor - b.valor);
+      .sort((a, b) => a.valor - b.valor)
+      .slice(0, 5);
 
-    return validas[0] || null;
+    return validas.length ? validas : null;
   } catch {
     return null; // API fora do ar / erro de rede -> quem chamou cai no fallback
   }
 }
 
-// Orquestrador: Itapetininga grátis -> frete grátis por valor -> cotação real
-// (Melhor Envio) -> fallback pra tabela fixa por região se a cotação falhar.
-async function calcularFrete(env, cepDigitos, uf, subtotal, qtdTotal) {
+// Orquestrador: Itapetininga grátis -> frete grátis por valor -> cotações
+// reais (Melhor Envio, várias opções) -> fallback pra tabela fixa por região
+// se a cotação falhar. Sempre devolve uma LISTA (1 item nos casos fixos).
+async function calcularOpcoesFrete(env, cepDigitos, uf, subtotal, qtdTotal) {
   const cepNum = parseInt(cepDigitos, 10);
   if (Number.isFinite(cepNum) && cepNum >= ITAPETININGA.min && cepNum <= ITAPETININGA.max) {
-    return { valor: 0, rotulo: "Entrega local em Itapetininga" };
+    return [
+      {
+        id: "itapetininga",
+        valor: 0,
+        rotulo: "Entrega local em Itapetininga — grátis, em até 48h",
+        prazo: 2,
+        retirada: false,
+      },
+    ];
   }
   if (FRETE_GRATIS_ACIMA != null && subtotal >= FRETE_GRATIS_ACIMA) {
-    return { valor: 0, rotulo: "Frete grátis" };
+    return [{ id: "gratis-valor", valor: 0, rotulo: "Frete grátis", prazo: null, retirada: false }];
   }
 
   const pacote = escolherPacote(Math.max(1, qtdTotal || 1));
-  const real = await cotarMelhorEnvio(env, cepDigitos, pacote);
-  if (real) return real;
+  const reais = await cotarMelhorEnvio(env, cepDigitos, pacote);
+  if (reais) return reais;
 
   const regiao = UF_REGIAO[(uf || "").toUpperCase()];
   if (!regiao || FRETE_REGIOES[regiao] == null) return null;
-  return { valor: FRETE_REGIOES[regiao], rotulo: `Frete — ${regiao} (estimado)` };
+  return [
+    {
+      id: `fallback-${regiao}`,
+      valor: FRETE_REGIOES[regiao],
+      rotulo: `Frete — ${regiao} (estimado)`,
+      prazo: null,
+      retirada: false,
+    },
+  ];
 }
 
 // POST /calcular-frete — cotação em tempo real pro checkout (antes de pagar).
@@ -173,9 +204,9 @@ async function calcularFreteEndpoint(req, env) {
   const uf = String(body.uf || "");
   if (cep.length !== 8) return json({ erro: "CEP inválido." }, 400, env);
 
-  const frete = await calcularFrete(env, cep, uf, subtotal, qtdTotal || 1);
-  if (!frete) return json({ erro: "Frete indisponível para este CEP." }, 400, env);
-  return json(frete, 200, env);
+  const opcoes = await calcularOpcoesFrete(env, cep, uf, subtotal, qtdTotal || 1);
+  if (!opcoes) return json({ erro: "Frete indisponível para este CEP." }, 400, env);
+  return json({ opcoes }, 200, env);
 }
 
 async function criarPreferencia(req, env) {
@@ -216,8 +247,15 @@ async function criarPreferencia(req, env) {
 
   const cep = String(body?.frete?.cep || "").replace(/\D/g, "");
   const uf = String(body?.frete?.uf || "");
-  const frete = await calcularFrete(env, cep, uf, subtotal, qtdTotal);
-  if (!frete) return json({ erro: "Frete indisponível para o CEP informado." }, 400, env);
+  const opcaoId = String(body?.frete?.opcaoId || "");
+
+  // Recotação FRESCA no servidor (nunca confia no valor que o cliente mandou).
+  // Se a opção que o cliente escolheu ainda existir na cotação nova, usa o
+  // preço dela; se sumiu (preço mudou, transportadora saiu do ar), usa a mais
+  // barata disponível agora em vez de travar o checkout.
+  const opcoes = await calcularOpcoesFrete(env, cep, uf, subtotal, qtdTotal);
+  if (!opcoes) return json({ erro: "Frete indisponível para o CEP informado." }, 400, env);
+  const frete = opcoes.find((o) => o.id === opcaoId) || opcoes[0];
   if (frete.valor > 0) {
     itensMP.push({
       id: "frete",

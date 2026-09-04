@@ -45,9 +45,8 @@ Copie essa URL para `LOJA_CONFIG.workerUrl` no arquivo `loja.js` do site.
 - `SITE_URL` — base do site, usada nas `back_urls` de retorno (`/pedido.html`).
 - `ALLOWED_ORIGIN` — origem liberada no CORS (igual ao `SITE_URL`).
 - `NOTIFY_EMAIL` — (opcional, ainda não usado) e-mail para aviso de pedido.
-- `ORIGEM_CEP` — CEP de onde os pedidos saem (Itapetininga). **Confira antes do
-  deploy** — está com um CEP de Itapetininga só como placeholder válido, troque
-  pelo CEP real do endereço de envio.
+- `ORIGEM_CEP` — CEP de onde os pedidos saem (Itapetininga), já com o CEP real
+  do Arnaldo (18208-672).
 
 ### Teste local
 
