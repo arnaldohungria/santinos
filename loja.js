@@ -143,6 +143,28 @@ function calcularFrete(cepDigitos, uf, sub) {
   return { valor: LOJA_CONFIG.freteRegioes[regiao], rotulo: `Frete — ${regiao}` };
 }
 
+// Cotação de frete pro checkout: usa o Worker (cotação real, Melhor Envio)
+// quando configurado; se não tiver Worker ou a chamada falhar, cai na
+// estimativa local (tabela fixa por região) — mesma lógica de calcularFrete.
+async function obterFrete(cepDigitos, uf, sub, itens) {
+  if (LOJA_CONFIG.workerUrl) {
+    try {
+      const r = await fetch(LOJA_CONFIG.workerUrl.replace(/\/$/, "") + "/calcular-frete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cep: cepDigitos, uf, itens }),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        if (d && typeof d.valor === "number" && d.rotulo) return d;
+      }
+    } catch {
+      /* sem conexão com o Worker -> usa a estimativa local abaixo */
+    }
+  }
+  return calcularFrete(cepDigitos, uf, sub);
+}
+
 /* ================================================================
  * VITRINE: injeta preços nos cards e liga os botões "Adicionar"
  * ================================================================ */
@@ -331,7 +353,13 @@ function initCheckout() {
       form.elements.cidade.value = d.localidade || "";
       form.elements.uf.value = d.uf || "";
 
-      freteAtual = calcularFrete(digs, d.uf, subtotal());
+      aviso.textContent = "Calculando frete…";
+      freteAtual = await obterFrete(
+        digs,
+        d.uf,
+        subtotal(),
+        linhas.map((l) => ({ id: l.id, qtd: l.qtd }))
+      );
       if (!freteAtual) {
         aviso.textContent = `Ainda não enviamos para ${d.uf}. Fale com a gente pelo WhatsApp.`;
       } else {

@@ -8,5 +8,10 @@ SITE_URL = "https://www.santinos.com.br"
 ALLOWED_ORIGIN = "https://www.santinos.com.br"
 # NOTIFY_EMAIL = "contato@santinos.com.br"
 
-# Secret (NÃO vai aqui): configurar com
+# CEP de onde os pedidos saem (Itapetininga), só dígitos.
+# >>> PLACEHOLDER — troque pelo CEP real do endereço de envio antes do deploy <<<
+ORIGEM_CEP = "18205739"
+
+# Secrets (NÃO vão aqui): configurar com
 #   npx wrangler secret put MP_ACCESS_TOKEN
+#   npx wrangler secret put MELHOR_ENVIO_TOKEN
