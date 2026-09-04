@@ -104,9 +104,17 @@ function json(data, status, env) {
 // Worker-a-Worker. Chamando a mesma requisição a partir da Vercel (onde o
 // site já está hospedado), funciona normalmente. O proxy só repassa a
 // cotação bruta; toda a lógica de filtro/ordenação continua aqui.
+//
+// IMPORTANTE: usa FRETE_PROXY_URL (o domínio *.vercel.app do projeto), não
+// SITE_URL (www.santinos.com.br). Testado e confirmado: chamando o domínio
+// customizado a partir do Worker, a resposta vem com headers de Cloudflare
+// (server: cloudflare, cf-ray) e cai num 502 — mesmo o domínio usando DNS da
+// Vercel (ns1/ns2.vercel-dns.com) e funcionando normal fora do Worker.
+// Chamando o domínio *.vercel.app bruto direto, sem passar pelo customizado,
+// o problema não ocorre.
 async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
-  if (!env.SITE_URL) {
-    const msg = "SITE_URL não configurado — usando fallback.";
+  if (!env.FRETE_PROXY_URL) {
+    const msg = "FRETE_PROXY_URL não configurado — usando fallback.";
     console.log("Melhor Envio:", msg);
     if (debug) debug.motivo = msg;
     return null;
@@ -118,7 +126,7 @@ async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
     return null;
   }
   try {
-    const proxyUrl = env.SITE_URL.replace(/\/$/, "") + "/api/melhor-envio";
+    const proxyUrl = env.FRETE_PROXY_URL.replace(/\/$/, "") + "/api/melhor-envio";
     const r = await fetch(proxyUrl, {
       method: "POST",
       headers: {

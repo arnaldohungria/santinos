@@ -8,6 +8,12 @@ SITE_URL = "https://www.santinos.com.br"
 ALLOWED_ORIGIN = "https://www.santinos.com.br"
 # NOTIFY_EMAIL = "contato@santinos.com.br"
 
+# Domínio *.vercel.app do projeto (não o customizado santinos.com.br!) usado
+# só pra chamar o proxy de frete. Ver comentário em cotarMelhorEnvio() no
+# index.js pra entender por quê. Confira em Vercel -> projeto -> Deployments
+# -> Production Deployment -> Domains se esse endereço mudar algum dia.
+FRETE_PROXY_URL = "https://santinos-sage.vercel.app"
+
 # Secrets (NÃO vão aqui): configurar com
 #   npx wrangler secret put MP_ACCESS_TOKEN
 #   npx wrangler secret put INTERNAL_SHARED_SECRET

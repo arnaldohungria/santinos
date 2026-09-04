@@ -96,6 +96,16 @@ antes. O proxy é protegido por `INTERNAL_SHARED_SECRET` (header
 `x-internal-secret`) pra ninguém de fora conseguir consumir a cota de
 cotações do Melhor Envio.
 
+**Por que `FRETE_PROXY_URL` aponta pro `*.vercel.app`, não pro `santinos.com.br`:**
+descoberto na prática — chamando `www.santinos.com.br/api/melhor-envio` a
+partir do Worker, a resposta vinha com headers de Cloudflare (`server:
+cloudflare`, `cf-ray`) e um 502, mesmo o domínio tendo DNS 100% na Vercel
+(`ns1/ns2.vercel-dns.com`) e nenhuma zona Cloudflare cadastrada em nenhuma
+conta. Chamando o domínio bruto `*.vercel.app` que a Vercel atribui ao
+projeto, sem passar pelo domínio customizado, o problema não ocorre. Causa
+raiz exata não confirmada (provavelmente alguma camada de roteamento/anti-abuso
+específica de domínio customizado), mas o contorno funciona de forma estável.
+
 **Segurança:** o token do Melhor Envio (configurado na Vercel, não aqui) só
 tem o escopo `shipping-calculate` (cotação, sem custo). Nunca é chamado
 `shipping-generate` / `shipping-checkout` / `shipping-cancel` — geração de
