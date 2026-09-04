@@ -96,7 +96,14 @@ function json(data, status, env) {
 // shipping-generate/checkout/cancel a partir daqui. Devolve até 5 opções
 // (mais barata primeiro) pro cliente escolher, não só a mais barata.
 async function cotarMelhorEnvio(env, cepDestino, pacote) {
-  if (!env.MELHOR_ENVIO_TOKEN || !env.ORIGEM_CEP) return null;
+  if (!env.MELHOR_ENVIO_TOKEN) {
+    console.log("Melhor Envio: MELHOR_ENVIO_TOKEN não configurado — usando fallback.");
+    return null;
+  }
+  if (!env.ORIGEM_CEP) {
+    console.log("Melhor Envio: ORIGEM_CEP não configurado — usando fallback.");
+    return null;
+  }
   try {
     const r = await fetch("https://melhorenvio.com.br/api/v2/me/shipment/calculate", {
       method: "POST",
@@ -117,9 +124,16 @@ async function cotarMelhorEnvio(env, cepDestino, pacote) {
         },
       }),
     });
-    if (!r.ok) return null;
+    if (!r.ok) {
+      const corpo = await r.text().catch(() => "");
+      console.log(`Melhor Envio: API respondeu ${r.status} — usando fallback. Corpo: ${corpo.slice(0, 300)}`);
+      return null;
+    }
     const cotacoes = await r.json();
-    if (!Array.isArray(cotacoes)) return null;
+    if (!Array.isArray(cotacoes)) {
+      console.log("Melhor Envio: resposta não é uma lista — usando fallback.", JSON.stringify(cotacoes).slice(0, 300));
+      return null;
+    }
 
     const validas = cotacoes
       .filter((c) => c && !c.error && c.price)
@@ -137,8 +151,12 @@ async function cotarMelhorEnvio(env, cepDestino, pacote) {
       .sort((a, b) => a.valor - b.valor)
       .slice(0, 5);
 
+    if (!validas.length) {
+      console.log("Melhor Envio: nenhuma cotação válida devolvida — usando fallback.", JSON.stringify(cotacoes).slice(0, 300));
+    }
     return validas.length ? validas : null;
-  } catch {
+  } catch (e) {
+    console.log("Melhor Envio: exceção na chamada — usando fallback.", e?.message || e);
     return null; // API fora do ar / erro de rede -> quem chamou cai no fallback
   }
 }
