@@ -308,6 +308,16 @@ function initCheckout() {
     return;
   }
 
+  if (typeof metaTrack === "function") {
+    metaTrack("InitiateCheckout", {
+      content_ids: linhas.map((l) => l.id),
+      content_type: "product",
+      num_items: contarItens(),
+      value: subtotal() / 100,
+      currency: LOJA_CONFIG.moeda,
+    });
+  }
+
   const elFrete = document.getElementById("ckFrete");
   const elTotal = document.getElementById("ckTotal");
   const elSub = document.getElementById("ckSubtotal");
@@ -523,7 +533,31 @@ function initPedido() {
   box.querySelector(".pedido-titulo").textContent = info.titulo;
   box.querySelector(".pedido-texto").textContent = info.texto;
 
-  if (info.classe === "ok") esvaziarCarrinho();
+  if (info.classe === "ok") {
+    // Dispara Purchase uma única vez por pedido (a "ref" do Mercado Pago é
+    // única por preferência) — evita contar de novo se o cliente atualizar
+    // a página de retorno.
+    const ref = q.get("ref") || "";
+    const jaRastreado = ref && localStorage.getItem("santinos_purchase_" + ref);
+    if (!jaRastreado && typeof metaTrack === "function") {
+      try {
+        const ultimo = JSON.parse(sessionStorage.getItem("santinos_ultimo_pedido") || "null");
+        if (ultimo) {
+          metaTrack("Purchase", {
+            content_ids: (ultimo.itens || []).map((i) => i.id),
+            content_type: "product",
+            num_items: (ultimo.itens || []).reduce((s, i) => s + i.qtd, 0),
+            value: ultimo.total / 100,
+            currency: LOJA_CONFIG.moeda,
+          });
+          if (ref) localStorage.setItem("santinos_purchase_" + ref, "1");
+        }
+      } catch {
+        /* sem dado local do pedido, sem Purchase — não tem valor pra reportar */
+      }
+    }
+    esvaziarCarrinho();
+  }
 }
 
 /* ================================================================
@@ -588,6 +622,17 @@ function initProduto() {
   if (!btn) return;
   const id = btn.dataset.addProduto;
   const qtdInput = document.getElementById("pdpQtd");
+  const prod = LOJA_CONFIG.produtos[id];
+
+  if (prod && typeof metaTrack === "function") {
+    metaTrack("ViewContent", {
+      content_ids: [id],
+      content_type: "product",
+      content_name: prod.nome,
+      value: prod.preco / 100,
+      currency: LOJA_CONFIG.moeda,
+    });
+  }
 
   btn.addEventListener("click", () => {
     let q = parseInt(qtdInput && qtdInput.value, 10);
@@ -595,6 +640,15 @@ function initProduto() {
     q = Math.min(q, 99);
     addItem(id, q);
     abrirDrawer();
+    if (prod && typeof metaTrack === "function") {
+      metaTrack("AddToCart", {
+        content_ids: [id],
+        content_type: "product",
+        content_name: prod.nome,
+        value: (prod.preco * q) / 100,
+        currency: LOJA_CONFIG.moeda,
+      });
+    }
   });
 }
 
