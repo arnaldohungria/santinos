@@ -130,9 +130,15 @@ async function cotarMelhorEnvio(env, cepDestino, pacote, debug) {
     });
     if (!r.ok) {
       const corpo = await r.text().catch(() => "");
+      const headersObj = {};
+      r.headers.forEach((v, k) => { headersObj[k] = v; });
       const msg = `API respondeu ${r.status} — usando fallback. Corpo: ${corpo.slice(0, 300)}`;
-      console.log("Melhor Envio:", msg);
-      if (debug) debug.motivo = msg;
+      console.log("Melhor Envio:", msg, JSON.stringify(headersObj));
+      if (debug) {
+        debug.motivo = msg;
+        debug.headersResposta = headersObj;
+        debug.tamanhoToken = env.MELHOR_ENVIO_TOKEN ? env.MELHOR_ENVIO_TOKEN.length : 0;
+      }
       return null;
     }
     const cotacoes = await r.json();
