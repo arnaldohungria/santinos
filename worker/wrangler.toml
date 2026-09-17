@@ -20,7 +20,7 @@ FRETE_PROXY_URL = "https://santinos-sage.vercel.app"
 [[d1_databases]]
 binding = "DB"
 database_name = "santinos-db"
-database_id = "COLAR-AQUI-DEPOIS-DO-D1-CREATE"
+database_id = "20fefdbd-c5ac-46a7-889d-16a5bce7bd6b"
 
 # Secrets (NÃO vão aqui): configurar com
 #   npx wrangler secret put MP_ACCESS_TOKEN
