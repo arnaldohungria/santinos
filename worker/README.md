@@ -2,8 +2,9 @@
 
 Backend mínimo do checkout: recebe o carrinho do site, **revalida preço e frete no
 servidor**, cota o frete real via **Melhor Envio**, cria a preferência no
-**Mercado Pago Checkout Pro** e devolve o link de pagamento. Também recebe o
-webhook de confirmação do Mercado Pago.
+**Mercado Pago Checkout Pro** e devolve o link de pagamento. O webhook grava
+os pedidos aprovados num banco **D1**, que também guarda os cupons de
+desconto — ambos administráveis pelo painel `admin.html` do site.
 
 Hospedado no **Cloudflare Workers** (free tier). Mesmo padrão do projeto AcademiaPlus.
 
@@ -15,7 +16,9 @@ Hospedado no **Cloudflare Workers** (free tier). Mesmo padrão do projeto Academ
 | POST | `/calcular-frete` | corpo `{ cep, uf, itens }` → `{ opcoes: [...] }` — cotação em tempo real, chamada pelo checkout enquanto o cliente digita o CEP |
 | POST | `/validar-cupom` | corpo `{ cupom, itens }` → `{ valido, codigo, descontoCentavos }` — confere o cupom em tempo real, chamado quando o cliente clica "Aplicar" no checkout |
 | POST | `/criar-preferencia` | corpo `{ itens, frete:{cep,uf}, cupom, comprador }` → `{ init_point }` |
-| POST | `/webhook` | notificação de pagamento do Mercado Pago (hoje só loga e responde 200) |
+| POST | `/webhook` | notificação de pagamento do Mercado Pago — consulta o pagamento e grava/atualiza o pedido em D1 |
+| GET | `/admin/pedidos` | (Basic Auth) lista os pedidos gravados, mais recentes primeiro |
+| GET/POST/DELETE | `/admin/cupons` | (Basic Auth) lista, cria/edita (upsert) ou apaga um cupom |
 
 ## Configuração
 
@@ -33,6 +36,14 @@ npx wrangler secret put MP_ACCESS_TOKEN
 # Segredo compartilhado com o proxy de frete da Vercel (api/melhor-envio.js) —
 # mesmo valor cadastrado lá em INTERNAL_SHARED_SECRET:
 npx wrangler secret put INTERNAL_SHARED_SECRET
+
+# Senha do painel /admin.html (usuário fixo "admin"):
+npx wrangler secret put ADMIN_PASSWORD
+
+# Banco D1 — só na primeira vez (cria o banco e devolve um database_id pra
+# colar em [[d1_databases]] no wrangler.toml, no lugar de "COLAR-AQUI..."):
+npx wrangler d1 create santinos-db
+npx wrangler d1 execute santinos-db --remote --file=./schema.sql
 
 # Deploy
 npx wrangler deploy
@@ -118,12 +129,12 @@ etiqueta e pagamento de frete continuam manuais, no painel do Melhor Envio.
 
 ## Como funcionam os cupons
 
-Cupons ficam numa tabela fixa no topo de `src/index.js` (`CUPONS`) — não tem
-banco de dados nem painel: pra criar ou desativar uma campanha, edita o
-código, comita e faz `wrangler deploy`. Reutilizáveis (qualquer cliente pode
-usar o mesmo código quantas vezes quiser) — não é uso único, não tem limite
-de vezes usado nem data de expiração automática (pra desativar, é só apagar
-a linha e fazer deploy de novo).
+Cupons ficam na tabela D1 `cupons` (ver `schema.sql`) — sem código nem deploy
+pra criar/editar/desativar, é tudo pelo painel `admin.html` do site (aba
+"Cupons"). Reutilizáveis (qualquer cliente pode usar o mesmo código quantas
+vezes quiser) — não é uso único, não tem limite de vezes usado nem data de
+expiração automática (pra desativar sem apagar o histórico, o painel só marca
+`ativo = 0`).
 
 Dois tipos: `percentual` (`valor` = % do subtotal) ou `fixo` (`valor` em
 CENTAVOS, abatido direto). O desconto nunca passa do subtotal (não gera valor
@@ -134,10 +145,43 @@ o valor que o cliente vê no checkout é só uma prévia via `/validar-cupom`; o
 O desconto entra na preferência como um item `unit_price` negativo
 ("Cupom X"), ao lado dos produtos e do frete.
 
+## Como funciona o painel de admin (`admin.html`)
+
+Login por senha única (`ADMIN_PASSWORD`, usuário fixo `"admin"`) via **HTTP
+Basic Auth** — sem sessão/cookie no servidor: a página testa a senha contra
+`/admin/pedidos` e, se der certo, guarda o header `Authorization` no
+`sessionStorage` do navegador (some ao fechar a aba) e manda ele em toda
+chamada `/admin/*` daí em diante.
+
+- **Pedidos**: lista o que o webhook gravou em D1 (cliente, itens, total,
+  cupom usado, status) — mais recente primeiro, até 300 registros.
+- **Cupons**: criar, editar (reenviar o mesmo código com valor novo
+  sobrescreve), ativar/desativar e apagar — tudo direto na tela, sem tocar em
+  código.
+
+O painel é uma página estática comum (`admin.html`, sobe pra Vercel junto com
+o resto do site) — a única proteção real é a senha checada no Worker; a URL
+em si não é secreta. Sem `ADMIN_PASSWORD` configurado no Worker, o painel
+nunca deixa ninguém entrar (inclusive o Arnaldo).
+
+## Como o webhook grava os pedidos
+
+O Mercado Pago manda `{ type: "payment", data: { id } }` pro `/webhook` a
+cada mudança de status. O Worker sempre responde `200` rápido (se falhar, o
+Mercado Pago reenvia depois) e, em paralelo, consulta
+`GET /v1/payments/{id}` pra pegar os dados completos do pagamento (status,
+valor, metadata) e grava em D1 (`INSERT ... ON CONFLICT DO UPDATE`, pela
+`external_reference` — reenvios do mesmo webhook só atualizam o status, não
+duplicam a linha).
+
+Os dados do pedido (nome, e-mail, endereço, itens, cupom) vêm do `metadata`
+que `criarPreferencia` já manda pro Mercado Pago na hora de gerar o link de
+pagamento — o webhook não recebe isso de novo do cliente, só busca de volta o
+que já tinha sido enviado.
+
 ## Pendências (v2)
 
-- `/webhook`: consultar `GET /v1/payments/{id}`, checar `status === "approved"`,
-  enviar e-mail de aviso e registrar o pedido (KV, D1 ou planilha).
+- Enviar e-mail de aviso (`NOTIFY_EMAIL`) quando um pedido é aprovado.
 - Manter `PRECOS`, `FRETE_REGIOES` e `PACOTES` em `src/index.js` **iguais**
   (preço/frete) ou coerentes (pacotes) com o `loja.js`.
 - Automatizar a compra da etiqueta no Melhor Envio depois do pagamento aprovado

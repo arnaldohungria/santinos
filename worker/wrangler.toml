@@ -14,11 +14,21 @@ ALLOWED_ORIGIN = "https://www.santinos.com.br"
 # -> Production Deployment -> Domains se esse endereço mudar algum dia.
 FRETE_PROXY_URL = "https://santinos-sage.vercel.app"
 
+# Banco D1 (pedidos + cupons — ver schema.sql). Criar com:
+#   npx wrangler d1 create santinos-db
+# e colar o "database_id" que o comando devolver aqui embaixo.
+[[d1_databases]]
+binding = "DB"
+database_name = "santinos-db"
+database_id = "COLAR-AQUI-DEPOIS-DO-D1-CREATE"
+
 # Secrets (NÃO vão aqui): configurar com
 #   npx wrangler secret put MP_ACCESS_TOKEN
 #   npx wrangler secret put INTERNAL_SHARED_SECRET
+#   npx wrangler secret put ADMIN_PASSWORD
 #
 # INTERNAL_SHARED_SECRET precisa ser IGUAL ao valor configurado na Vercel
 # (variável INTERNAL_SHARED_SECRET do projeto, usada por api/melhor-envio.js).
 # O MELHOR_ENVIO_TOKEN e o ORIGEM_CEP não ficam mais aqui — foram pra Vercel,
 # veja api/melhor-envio.js.
+# ADMIN_PASSWORD é a senha do painel /admin.html (usuário fixo "admin").
