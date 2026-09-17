@@ -136,6 +136,7 @@ a{ color: inherit; }
 }
 .btn-primary:hover{ background: #ff7a3d; }
 .btn-ghost{
+  background: none;
   border-color: var(--bone-faint);
   color: var(--bone);
 }
