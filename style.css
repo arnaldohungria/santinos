@@ -18,6 +18,9 @@
 }
 
 *, *::before, *::after{ box-sizing: border-box; }
+/* Garante que o atributo "hidden" some o elemento mesmo quando alguma
+   classe (ex: display:flex) tentaria disputar essa mesma propriedade. */
+[hidden]{ display:none !important; }
 html{ scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce){
   html{ scroll-behavior: auto; }
@@ -538,8 +541,21 @@ body.no-scroll{ overflow: hidden; }
 .checkout-resumo h2{ font-size: 18px; margin-bottom: 18px; }
 .resumo-itens{ list-style:none; margin: 0 0 16px; padding: 0 0 16px; border-bottom: 1px solid var(--bone-faint); }
 .resumo-itens li{ display:flex; justify-content:space-between; gap: 12px; font-size: 14px; margin-bottom: 10px; }
+.resumo-cupom{ margin: 0 0 16px; }
+.cupom-linha{ display:flex; gap: 8px; }
+.cupom-linha input{
+  flex:1; min-width:0; background: var(--charcoal); color: var(--bone);
+  border: 1px solid var(--bone-faint); border-radius: 3px;
+  padding: 9px 10px; font-family: var(--body); font-size: 13px;
+  transition: border-color 0.2s ease;
+}
+.cupom-linha input:focus{ outline: none; border-color: var(--ember); }
+.cupom-linha .btn{ padding: 9px 16px; font-size: 12px; white-space: nowrap; }
+.cupom-msg{ font-size: 12px; margin: 6px 0 0; min-height: 1.2em; color: var(--bone-dim); }
+.cupom-msg.ok{ color: var(--ember); }
 .resumo-linha{ display:flex; justify-content:space-between; align-items:baseline; font-size: 14px; margin-bottom: 10px; color: var(--bone-dim); }
 .resumo-linha em{ font-style: normal; font-family: var(--mono); font-size: 11px; display:block; }
+.resumo-desconto{ color: var(--ember); }
 .resumo-total{
   margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--bone-faint);
   color: var(--bone); font-size: 16px;

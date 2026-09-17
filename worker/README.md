@@ -13,7 +13,8 @@ Hospedado no **Cloudflare Workers** (free tier). Mesmo padrão do projeto Academ
 |---|---|---|
 | GET | `/health` | teste de vida |
 | POST | `/calcular-frete` | corpo `{ cep, uf, itens }` → `{ opcoes: [...] }` — cotação em tempo real, chamada pelo checkout enquanto o cliente digita o CEP |
-| POST | `/criar-preferencia` | corpo `{ itens, frete:{cep,uf}, comprador }` → `{ init_point }` |
+| POST | `/validar-cupom` | corpo `{ cupom, itens }` → `{ valido, codigo, descontoCentavos }` — confere o cupom em tempo real, chamado quando o cliente clica "Aplicar" no checkout |
+| POST | `/criar-preferencia` | corpo `{ itens, frete:{cep,uf}, cupom, comprador }` → `{ init_point }` |
 | POST | `/webhook` | notificação de pagamento do Mercado Pago (hoje só loga e responde 200) |
 
 ## Configuração
@@ -114,6 +115,24 @@ painel do Melhor Envio.
 tem o escopo `shipping-calculate` (cotação, sem custo). Nunca é chamado
 `shipping-generate` / `shipping-checkout` / `shipping-cancel` — geração de
 etiqueta e pagamento de frete continuam manuais, no painel do Melhor Envio.
+
+## Como funcionam os cupons
+
+Cupons ficam numa tabela fixa no topo de `src/index.js` (`CUPONS`) — não tem
+banco de dados nem painel: pra criar ou desativar uma campanha, edita o
+código, comita e faz `wrangler deploy`. Reutilizáveis (qualquer cliente pode
+usar o mesmo código quantas vezes quiser) — não é uso único, não tem limite
+de vezes usado nem data de expiração automática (pra desativar, é só apagar
+a linha e fazer deploy de novo).
+
+Dois tipos: `percentual` (`valor` = % do subtotal) ou `fixo` (`valor` em
+CENTAVOS, abatido direto). O desconto nunca passa do subtotal (não gera valor
+negativo) e é sempre recalculado no servidor em cima do carrinho de verdade —
+o valor que o cliente vê no checkout é só uma prévia via `/validar-cupom`; o
+`/criar-preferencia` confere tudo de novo antes de mandar pro Mercado Pago.
+
+O desconto entra na preferência como um item `unit_price` negativo
+("Cupom X"), ao lado dos produtos e do frete.
 
 ## Pendências (v2)
 
