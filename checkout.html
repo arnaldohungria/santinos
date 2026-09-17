@@ -89,6 +89,15 @@
       <aside class="checkout-resumo">
         <h2>Resumo do pedido</h2>
         <ul id="ckResumo" class="resumo-itens"></ul>
+
+        <div class="resumo-cupom">
+          <div class="cupom-linha">
+            <input type="text" id="ckCupomInput" placeholder="Cupom de desconto" autocomplete="off">
+            <button type="button" class="btn btn-ghost" id="ckCupomBtn">Aplicar</button>
+          </div>
+          <p class="cupom-msg" id="ckCupomMsg" role="status"></p>
+        </div>
+
         <div class="resumo-linha">
           <span>Subtotal</span>
           <span id="ckSubtotal">R$ 0,00</span>
@@ -96,6 +105,10 @@
         <div class="resumo-linha">
           <span>Frete <em id="ckFreteRotulo">Informe o CEP</em></span>
           <span id="ckFrete">—</span>
+        </div>
+        <div class="resumo-linha resumo-desconto" id="ckDescontoLinha" hidden>
+          <span>Desconto <em id="ckCupomRotulo"></em></span>
+          <span id="ckDesconto">—</span>
         </div>
         <div class="resumo-linha resumo-total">
           <span>Total</span>

@@ -326,6 +326,13 @@ function initCheckout() {
   const opcoesBox = document.getElementById("ckFreteOpcoes");
   let opcoesFrete = []; // lista devolvida pelo obterOpcoesFrete
   let freteAtual = null; // opção escolhida: { id, valor, rotulo, prazo, retirada }
+  let cupomAtual = null; // cupom aplicado: { codigo, descontoCentavos } ou null
+
+  const cupomInput = document.getElementById("ckCupomInput");
+  const cupomBtn = document.getElementById("ckCupomBtn");
+  const cupomMsg = document.getElementById("ckCupomMsg");
+  const descontoLinha = document.getElementById("ckDescontoLinha");
+  const elDesconto = document.getElementById("ckDesconto");
 
   // Resumo dos itens
   resumo.innerHTML = linhas
@@ -339,17 +346,65 @@ function initCheckout() {
   elSub.textContent = fmt(subtotal());
 
   function pintarTotais() {
+    const freteValor = freteAtual ? freteAtual.valor : 0;
+    const descontoValor = cupomAtual ? cupomAtual.descontoCentavos : 0;
+
     if (freteAtual) {
       elFrete.textContent = freteAtual.valor === 0 ? "Grátis" : fmt(freteAtual.valor);
       document.getElementById("ckFreteRotulo").textContent = freteAtual.rotulo;
-      elTotal.textContent = fmt(subtotal() + freteAtual.valor);
     } else {
       elFrete.textContent = "—";
       document.getElementById("ckFreteRotulo").textContent = "Informe o CEP";
-      elTotal.textContent = fmt(subtotal());
     }
+
+    if (cupomAtual) {
+      descontoLinha.hidden = false;
+      document.getElementById("ckCupomRotulo").textContent = cupomAtual.codigo;
+      elDesconto.textContent = "−" + fmt(descontoValor);
+    } else {
+      descontoLinha.hidden = true;
+    }
+
+    elTotal.textContent = fmt(Math.max(0, subtotal() + freteValor - descontoValor));
   }
   pintarTotais();
+
+  async function aplicarCupom() {
+    const codigo = cupomInput.value.trim();
+    if (!codigo) return;
+    cupomBtn.disabled = true;
+    cupomMsg.className = "cupom-msg";
+    cupomMsg.textContent = "Conferindo…";
+    try {
+      if (!LOJA_CONFIG.workerUrl) throw new Error("indisponível");
+      const r = await fetch(LOJA_CONFIG.workerUrl.replace(/\/$/, "") + "/validar-cupom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cupom: codigo, itens: linhas.map((l) => ({ id: l.id, qtd: l.qtd })) }),
+      });
+      const d = await r.json();
+      if (!d.valido) {
+        cupomAtual = null;
+        cupomMsg.textContent = d.mensagem || "Cupom inválido.";
+      } else {
+        cupomAtual = { codigo: d.codigo, descontoCentavos: d.descontoCentavos };
+        cupomMsg.className = "cupom-msg ok";
+        cupomMsg.textContent = `Cupom ${d.codigo} aplicado!`;
+      }
+    } catch {
+      cupomAtual = null;
+      cupomMsg.textContent = "Não consegui conferir o cupom agora. Tente de novo.";
+    }
+    cupomBtn.disabled = false;
+    pintarTotais();
+  }
+  cupomBtn.addEventListener("click", aplicarCupom);
+  cupomInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      aplicarCupom();
+    }
+  });
 
   // Mostra as opções de frete como rádio quando há mais de uma (cotação real
   // do Worker); com uma só opção (Itapetininga, ou estimativa/fallback local)
@@ -450,6 +505,7 @@ function initCheckout() {
     const pedido = {
       itens: linhas.map((l) => ({ id: l.id, qtd: l.qtd })),
       frete: { cep: cep.value.replace(/\D/g, ""), uf: form.elements.uf.value, opcaoId: freteAtual.id },
+      cupom: cupomAtual ? cupomAtual.codigo : undefined,
       comprador: {
         nome: form.elements.nome.value.trim(),
         email: form.elements.email.value.trim(),
@@ -493,9 +549,11 @@ function initCheckout() {
       }
       const d = await r.json();
       if (!r.ok || !d.init_point) throw new Error(d.erro || "Falha ao criar o pagamento.");
-      // Guarda um resumo local para a página de retorno.
+      // Guarda um resumo local para a página de retorno. Usa o total_centavos
+      // que o Worker devolveu (já com frete e desconto de cupom aplicados de
+      // verdade), em vez de recalcular aqui — evita divergência.
       sessionStorage.setItem("santinos_ultimo_pedido", JSON.stringify({
-        itens: pedido.itens, total: subtotal() + freteAtual.valor, criadoEm: Date.now(),
+        itens: pedido.itens, total: d.total_centavos, criadoEm: Date.now(),
       }));
       window.location.href = d.init_point;
     } catch (err) {

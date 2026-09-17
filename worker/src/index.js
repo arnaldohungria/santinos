@@ -5,9 +5,12 @@
  *   POST /calcular-frete      -> recebe { cep, uf, itens }, devolve { opcoes: [...] }
  *                                (várias cotações reais via Melhor Envio, mais barata
  *                                primeiro; cai pra tabela fixa se a API não responder)
+ *   POST /validar-cupom       -> recebe { cupom, itens }, devolve { valido, tipo, valor,
+ *                                descontoCentavos, mensagem } — cotação do desconto em
+ *                                tempo real pro checkout, antes de pagar
  *   POST /criar-preferencia   -> recebe o carrinho + a opção de frete escolhida
- *                                (frete.opcaoId), revalida tudo no servidor e cria a
- *                                preferência no Mercado Pago
+ *                                (frete.opcaoId) + o cupom (opcional), revalida tudo no
+ *                                servidor e cria a preferência no Mercado Pago
  *   POST /webhook             -> recebe a notificação de pagamento do Mercado Pago
  *
  * Secrets/vars (wrangler secret put / wrangler.toml [vars]):
@@ -34,6 +37,16 @@ const PRECOS = {
   "suave":       { nome: "Santino's Suave",       preco: 1990 },
   "defumado":    { nome: "Santino's Defumado",    preco: 1990 },
   "extra-forte": { nome: "Santino's Extra Forte", preco: 1990 },
+};
+
+// Cupons de desconto. Reutilizáveis (qualquer cliente pode usar o mesmo
+// código quantas vezes quiser) — não é uso único, não precisa de banco de
+// dados. Tipos: "percentual" (valor = % do subtotal) ou "fixo" (valor em
+// CENTAVOS, abatido direto). Código é sempre comparado em maiúsculas.
+// Vazio = nenhum cupom ativo. Editar aqui pra criar/desativar campanhas.
+const CUPONS = {
+  // "SANTINOS10": { tipo: "percentual", valor: 10 },
+  // "BEMVINDO5":  { tipo: "fixo", valor: 500 },
 };
 
 // Frete fixo por região, em CENTAVOS — usado só como FALLBACK se o Melhor
@@ -237,6 +250,41 @@ async function calcularFreteEndpoint(req, env) {
   return json({ opcoes }, 200, env);
 }
 
+// Confere um código de cupom contra CUPONS e calcula o desconto (em
+// CENTAVOS) pro subtotal informado. Nunca deixa o desconto passar do
+// subtotal (não gera valor negativo). Devolve null se o código não existir.
+function validarCupom(codigoBruto, subtotal) {
+  const codigo = String(codigoBruto || "").trim().toUpperCase();
+  const cupom = codigo && CUPONS[codigo];
+  if (!cupom) return null;
+  const bruto = cupom.tipo === "percentual" ? Math.round((subtotal * cupom.valor) / 100) : cupom.valor;
+  const descontoCentavos = Math.max(0, Math.min(bruto, subtotal));
+  return { codigo, tipo: cupom.tipo, valor: cupom.valor, descontoCentavos };
+}
+
+// POST /validar-cupom — confere o cupom em tempo real pro checkout, antes de pagar.
+async function validarCupomEndpoint(req, env) {
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ erro: "JSON inválido." }, 400, env);
+  }
+
+  const itensReq = Array.isArray(body.itens) ? body.itens : [];
+  let subtotal = 0;
+  for (const it of itensReq) {
+    const prod = PRECOS[it.id];
+    const qtd = Math.floor(Number(it.qtd));
+    if (!prod || !Number.isFinite(qtd) || qtd < 1) continue;
+    subtotal += prod.preco * qtd;
+  }
+
+  const resultado = validarCupom(body.cupom, subtotal);
+  if (!resultado) return json({ valido: false, mensagem: "Cupom inválido." }, 200, env);
+  return json({ valido: true, ...resultado }, 200, env);
+}
+
 async function criarPreferencia(req, env) {
   if (!env.MP_ACCESS_TOKEN) {
     return json({ erro: "MP_ACCESS_TOKEN não configurado no Worker." }, 501, env);
@@ -294,6 +342,20 @@ async function criarPreferencia(req, env) {
     });
   }
 
+  // Recotação FRESCA do cupom também — mesmo motivo do frete: nunca confia
+  // no desconto que o cliente mandou, sempre recalcula contra o subtotal
+  // real de novo aqui.
+  const cupom = body.cupom ? validarCupom(body.cupom, subtotal) : null;
+  if (cupom && cupom.descontoCentavos > 0) {
+    itensMP.push({
+      id: "desconto",
+      title: `Cupom ${cupom.codigo}`,
+      quantity: 1,
+      currency_id: "BRL",
+      unit_price: -(cupom.descontoCentavos / 100),
+    });
+  }
+
   const c = body.comprador || {};
   const externalRef = "SNT-" + Date.now().toString(36).toUpperCase();
   const site = (env.SITE_URL || "https://www.santinos.com.br").replace(/\/$/, "");
@@ -321,6 +383,8 @@ async function criarPreferencia(req, env) {
       whatsapp: (c.whatsapp || "").replace(/\D/g, ""),
       subtotal_centavos: subtotal,
       frete_centavos: frete.valor,
+      cupom: cupom ? cupom.codigo : null,
+      desconto_centavos: cupom ? cupom.descontoCentavos : 0,
     },
   };
 
@@ -352,7 +416,7 @@ async function criarPreferencia(req, env) {
       init_point: data.init_point,
       preference_id: data.id,
       external_reference: externalRef,
-      total_centavos: subtotal + frete.valor,
+      total_centavos: subtotal + frete.valor - (cupom ? cupom.descontoCentavos : 0),
     },
     200,
     env
@@ -408,6 +472,10 @@ async function handleRequest(req, env) {
 
   if (url.pathname === "/calcular-frete" && req.method === "POST") {
     return calcularFreteEndpoint(req, env);
+  }
+
+  if (url.pathname === "/validar-cupom" && req.method === "POST") {
+    return validarCupomEndpoint(req, env);
   }
 
   if (url.pathname === "/criar-preferencia" && req.method === "POST") {
