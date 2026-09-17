@@ -11,16 +11,22 @@
  *   POST /criar-preferencia   -> recebe o carrinho + a opção de frete escolhida
  *                                (frete.opcaoId) + o cupom (opcional), revalida tudo no
  *                                servidor e cria a preferência no Mercado Pago
- *   POST /webhook             -> recebe a notificação de pagamento do Mercado Pago
+ *   POST /webhook             -> recebe a notificação de pagamento do Mercado Pago;
+ *                                se aprovado, consulta o pagamento e grava em D1 (pedidos)
+ *   GET  /admin/pedidos       -> (autenticado) lista os pedidos gravados
+ *   GET|POST|DELETE /admin/cupons -> (autenticado) lista/cria-edita/apaga cupons
  *
  * Secrets/vars (wrangler secret put / wrangler.toml [vars]):
  *   MP_ACCESS_TOKEN        (secret)  Access Token de PRODUÇÃO do Mercado Pago
  *   INTERNAL_SHARED_SECRET (secret)  mesmo valor configurado na Vercel (api/melhor-envio.js);
  *                                    autentica a chamada Worker -> proxy de frete
+ *   ADMIN_PASSWORD         (secret)  senha do painel de admin (Basic Auth, usuário "admin")
  *   SITE_URL               (var)     ex: https://www.santinos.com.br — também usado
  *                                    pra achar o proxy de frete (SITE_URL + /api/melhor-envio)
  *   ALLOWED_ORIGIN         (var)     origem liberada no CORS (mesmo valor de SITE_URL)
  *   NOTIFY_EMAIL           (var)     (opcional) e-mail para aviso de pedido — TODO
+ *   DB                     (binding D1, wrangler.toml)  banco com as tabelas
+ *                                    "pedidos" e "cupons" — ver worker/schema.sql
  *
  * A cotação real do Melhor Envio NÃO é chamada direto daqui — veja o
  * comentário em cotarMelhorEnvio() abaixo. O token do Melhor Envio e o
@@ -39,15 +45,9 @@ const PRECOS = {
   "extra-forte": { nome: "Santino's Extra Forte", preco: 1990 },
 };
 
-// Cupons de desconto. Reutilizáveis (qualquer cliente pode usar o mesmo
-// código quantas vezes quiser) — não é uso único, não precisa de banco de
-// dados. Tipos: "percentual" (valor = % do subtotal) ou "fixo" (valor em
-// CENTAVOS, abatido direto). Código é sempre comparado em maiúsculas.
-// Vazio = nenhum cupom ativo. Editar aqui pra criar/desativar campanhas.
-const CUPONS = {
-  // "SANTINOS10": { tipo: "percentual", valor: 10 },
-  // "BEMVINDO5":  { tipo: "fixo", valor: 500 },
-};
+// Cupons de desconto ficam na tabela D1 "cupons" (ver validarCupom() e
+// worker/schema.sql), editáveis pelo painel de admin — não são mais uma
+// constante fixa aqui no código.
 
 // Frete fixo por região, em CENTAVOS — usado só como FALLBACK se o Melhor
 // Envio não responder (API fora do ar, sem token configurado, CEP não
@@ -98,8 +98,8 @@ const UF_REGIAO = {
 function cors(env) {
   return {
     "Access-Control-Allow-Origin": env.ALLOWED_ORIGIN || "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
 }
 
@@ -250,16 +250,20 @@ async function calcularFreteEndpoint(req, env) {
   return json({ opcoes }, 200, env);
 }
 
-// Confere um código de cupom contra CUPONS e calcula o desconto (em
-// CENTAVOS) pro subtotal informado. Nunca deixa o desconto passar do
-// subtotal (não gera valor negativo). Devolve null se o código não existir.
-function validarCupom(codigoBruto, subtotal) {
+// Confere um código de cupom contra a tabela D1 "cupons" (só considera
+// ativo=1) e calcula o desconto (em CENTAVOS) pro subtotal informado. Nunca
+// deixa o desconto passar do subtotal (não gera valor negativo). Devolve
+// null se o código não existir, estiver desativado, ou não houver banco.
+async function validarCupom(env, codigoBruto, subtotal) {
   const codigo = String(codigoBruto || "").trim().toUpperCase();
-  const cupom = codigo && CUPONS[codigo];
-  if (!cupom) return null;
-  const bruto = cupom.tipo === "percentual" ? Math.round((subtotal * cupom.valor) / 100) : cupom.valor;
+  if (!codigo || !env.DB) return null;
+  const row = await env.DB.prepare("SELECT tipo, valor FROM cupons WHERE codigo = ?1 AND ativo = 1")
+    .bind(codigo)
+    .first();
+  if (!row) return null;
+  const bruto = row.tipo === "percentual" ? Math.round((subtotal * row.valor) / 100) : row.valor;
   const descontoCentavos = Math.max(0, Math.min(bruto, subtotal));
-  return { codigo, tipo: cupom.tipo, valor: cupom.valor, descontoCentavos };
+  return { codigo, tipo: row.tipo, valor: row.valor, descontoCentavos };
 }
 
 // POST /validar-cupom — confere o cupom em tempo real pro checkout, antes de pagar.
@@ -280,7 +284,7 @@ async function validarCupomEndpoint(req, env) {
     subtotal += prod.preco * qtd;
   }
 
-  const resultado = validarCupom(body.cupom, subtotal);
+  const resultado = await validarCupom(env, body.cupom, subtotal);
   if (!resultado) return json({ valido: false, mensagem: "Cupom inválido." }, 200, env);
   return json({ valido: true, ...resultado }, 200, env);
 }
@@ -345,7 +349,7 @@ async function criarPreferencia(req, env) {
   // Recotação FRESCA do cupom também — mesmo motivo do frete: nunca confia
   // no desconto que o cliente mandou, sempre recalcula contra o subtotal
   // real de novo aqui.
-  const cupom = body.cupom ? validarCupom(body.cupom, subtotal) : null;
+  const cupom = body.cupom ? await validarCupom(env, body.cupom, subtotal) : null;
   if (cupom && cupom.descontoCentavos > 0) {
     itensMP.push({
       id: "desconto",
@@ -380,7 +384,11 @@ async function criarPreferencia(req, env) {
       cep,
       uf,
       endereco: c.endereco || null,
+      nome: c.nome || null,
+      email: c.email || null,
+      cpf: c.cpf ? String(c.cpf).replace(/\D/g, "") : null,
       whatsapp: (c.whatsapp || "").replace(/\D/g, ""),
+      itens: itensReq.map((it) => ({ id: it.id, qtd: Math.floor(Number(it.qtd)) })),
       subtotal_centavos: subtotal,
       frete_centavos: frete.valor,
       cupom: cupom ? cupom.codigo : null,
@@ -423,10 +431,51 @@ async function criarPreferencia(req, env) {
   );
 }
 
+// Grava/atualiza um pedido na tabela D1 "pedidos" a partir do objeto de
+// pagamento que a API do Mercado Pago devolve. Upsert por external_reference
+// (é a nossa referência única, gerada em criarPreferencia) — assim, se o
+// Mercado Pago reenviar o mesmo webhook (ele faz isso), só atualiza o status
+// em vez de duplicar a linha.
+async function salvarPedido(env, pagamento) {
+  if (!env.DB) return;
+  const m = pagamento.metadata || {};
+  const ref = pagamento.external_reference || `mp-${pagamento.id}`;
+  const agora = new Date().toISOString();
+  await env.DB.prepare(
+    `INSERT INTO pedidos (
+       external_reference, mp_payment_id, status, nome, email, whatsapp, cpf,
+       endereco_json, itens_json, subtotal_centavos, frete_centavos,
+       desconto_centavos, cupom, total_centavos, criado_em, atualizado_em
+     ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?15)
+     ON CONFLICT(external_reference) DO UPDATE SET
+       mp_payment_id = excluded.mp_payment_id,
+       status = excluded.status,
+       atualizado_em = excluded.atualizado_em`
+  )
+    .bind(
+      ref,
+      String(pagamento.id || ""),
+      pagamento.status || "desconhecido",
+      m.nome || null,
+      m.email || pagamento.payer?.email || null,
+      m.whatsapp || null,
+      m.cpf || null,
+      JSON.stringify(m.endereco || null),
+      JSON.stringify(m.itens || []),
+      Number.isFinite(m.subtotal_centavos) ? m.subtotal_centavos : null,
+      Number.isFinite(m.frete_centavos) ? m.frete_centavos : null,
+      Number.isFinite(m.desconto_centavos) ? m.desconto_centavos : 0,
+      m.cupom || null,
+      Number.isFinite(pagamento.transaction_amount) ? Math.round(pagamento.transaction_amount * 100) : null,
+      agora
+    )
+    .run();
+}
+
 async function webhook(req, env) {
   // O Mercado Pago manda { type, data: { id } } (ou querystring ?type=&data.id=).
-  // Aqui só confirmamos recebimento rápido (200). O processamento real vem depois:
-  // consultar o pagamento, e, se approved, notificar o Arnaldo / registrar o pedido.
+  // Sempre respondemos 200 rápido (se demorar ou falhar, o Mercado Pago
+  // reenvia depois) — qualquer erro no processamento abaixo só fica no log.
   let payload = {};
   try {
     payload = await req.json();
@@ -436,12 +485,105 @@ async function webhook(req, env) {
   const url = new URL(req.url);
   const tipo = payload.type || url.searchParams.get("type");
   const id = payload?.data?.id || url.searchParams.get("data.id");
-
-  // TODO: if (tipo === "payment" && id) { consultar GET /v1/payments/{id} com o token,
-  //       checar status === "approved", enviar e-mail para NOTIFY_EMAIL e persistir. }
   console.log("webhook MP recebido:", tipo, id);
 
+  if (tipo === "payment" && id && env.MP_ACCESS_TOKEN) {
+    try {
+      const r = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
+        headers: { Authorization: `Bearer ${env.MP_ACCESS_TOKEN}` },
+      });
+      if (r.ok) {
+        const pagamento = await r.json();
+        await salvarPedido(env, pagamento);
+      } else {
+        console.log("webhook: falha ao consultar pagamento", r.status);
+      }
+    } catch (e) {
+      console.log("webhook: erro ao processar pagamento:", e?.message || e);
+    }
+  }
+
+  // TODO: notificar o Arnaldo por e-mail (NOTIFY_EMAIL) quando status === "approved".
   return new Response("ok", { status: 200 });
+}
+
+// Confere o header "Authorization: Basic usuario:senha" contra ADMIN_PASSWORD
+// (usuário fixo "admin"). Sem ADMIN_PASSWORD configurado, ninguém entra.
+function adminAutorizado(req, env) {
+  if (!env.ADMIN_PASSWORD) return false;
+  const auth = req.headers.get("Authorization") || "";
+  if (!auth.startsWith("Basic ")) return false;
+  try {
+    const [usuario, senha] = atob(auth.slice(6)).split(":");
+    return usuario === "admin" && senha === env.ADMIN_PASSWORD;
+  } catch {
+    return false;
+  }
+}
+
+function naoAutorizado(env) {
+  return new Response(JSON.stringify({ erro: "Não autorizado." }), {
+    status: 401,
+    headers: { "Content-Type": "application/json", "WWW-Authenticate": 'Basic realm="admin"', ...cors(env) },
+  });
+}
+
+// GET /admin/pedidos — lista os pedidos mais recentes.
+async function adminPedidos(req, env) {
+  if (!adminAutorizado(req, env)) return naoAutorizado(env);
+  if (!env.DB) return json({ erro: "Banco de dados não configurado." }, 500, env);
+  const { results } = await env.DB.prepare(
+    "SELECT * FROM pedidos ORDER BY criado_em DESC LIMIT 300"
+  ).all();
+  const pedidos = results.map((p) => ({
+    ...p,
+    endereco: p.endereco_json ? JSON.parse(p.endereco_json) : null,
+    itens: p.itens_json ? JSON.parse(p.itens_json) : [],
+    endereco_json: undefined,
+    itens_json: undefined,
+  }));
+  return json({ pedidos }, 200, env);
+}
+
+// GET|POST|DELETE /admin/cupons — lista, cria/edita (upsert) ou apaga cupons.
+async function adminCupons(req, env) {
+  if (!adminAutorizado(req, env)) return naoAutorizado(env);
+  if (!env.DB) return json({ erro: "Banco de dados não configurado." }, 500, env);
+
+  if (req.method === "GET") {
+    const { results } = await env.DB.prepare("SELECT * FROM cupons ORDER BY criado_em DESC").all();
+    return json({ cupons: results }, 200, env);
+  }
+
+  if (req.method === "POST") {
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ erro: "JSON inválido." }, 400, env);
+    }
+    const codigo = String(body.codigo || "").trim().toUpperCase();
+    const tipo = body.tipo === "fixo" ? "fixo" : "percentual";
+    const valor = Math.max(0, Math.floor(Number(body.valor) || 0));
+    const ativo = body.ativo === false ? 0 : 1;
+    if (!codigo || !valor) return json({ erro: "Código e valor são obrigatórios." }, 400, env);
+    await env.DB.prepare(
+      `INSERT INTO cupons (codigo, tipo, valor, ativo, criado_em) VALUES (?1,?2,?3,?4,?5)
+       ON CONFLICT(codigo) DO UPDATE SET tipo = excluded.tipo, valor = excluded.valor, ativo = excluded.ativo`
+    )
+      .bind(codigo, tipo, valor, ativo, new Date().toISOString())
+      .run();
+    return json({ ok: true }, 200, env);
+  }
+
+  if (req.method === "DELETE") {
+    const codigo = String(new URL(req.url).searchParams.get("codigo") || "").trim().toUpperCase();
+    if (!codigo) return json({ erro: "Código é obrigatório." }, 400, env);
+    await env.DB.prepare("DELETE FROM cupons WHERE codigo = ?1").bind(codigo).run();
+    return json({ ok: true }, 200, env);
+  }
+
+  return json({ erro: "Método não permitido." }, 405, env);
 }
 
 export default {
@@ -484,6 +626,14 @@ async function handleRequest(req, env) {
 
   if (url.pathname === "/webhook") {
     return webhook(req, env);
+  }
+
+  if (url.pathname === "/admin/pedidos" && req.method === "GET") {
+    return adminPedidos(req, env);
+  }
+
+  if (url.pathname === "/admin/cupons") {
+    return adminCupons(req, env);
   }
 
   return json({ erro: "Rota não encontrada." }, 404, env);
