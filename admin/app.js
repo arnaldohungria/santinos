@@ -88,7 +88,8 @@ async function tentarEntrar() {
   tentandoLogin = true;
   sessao.salvar(senha);
   try {
-    await api("/admin/ping");
+    // Worker ainda na versão antiga (sem /admin/ping)? Confere a senha por outra rota.
+    await api("/admin/ping").catch((e) => (e.status === 404 ? api("/admin/pedidos") : Promise.reject(e)));
     erro.textContent = "";
     await iniciar();
   } catch (e) {
