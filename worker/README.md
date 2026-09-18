@@ -3,8 +3,13 @@
 Backend mínimo do checkout: recebe o carrinho do site, **revalida preço e frete no
 servidor**, cota o frete real via **Melhor Envio**, cria a preferência no
 **Mercado Pago Checkout Pro** e devolve o link de pagamento. O webhook grava
-os pedidos aprovados num banco **D1**, que também guarda os cupons de
-desconto — ambos administráveis pelo painel `admin.html` do site.
+os pedidos num banco **D1** (que também guarda cupons e configurações) — tudo
+administrável pelo painel `admin.html` do site (dashboard, pedidos, clientes,
+cupons, relatórios).
+
+Código: `src/index.js` (checkout), `src/admin.js` (painel), `src/pedidos.js`
+(gravação de pedidos + sincronização com o Mercado Pago), `src/cupons.js`
+(regras de cupom), `src/catalogo.js` (preços), `src/util.js`.
 
 Hospedado no **Cloudflare Workers** (free tier). Mesmo padrão do projeto AcademiaPlus.
 
@@ -17,8 +22,12 @@ Hospedado no **Cloudflare Workers** (free tier). Mesmo padrão do projeto Academ
 | POST | `/validar-cupom` | corpo `{ cupom, itens }` → `{ valido, codigo, descontoCentavos }` — confere o cupom em tempo real, chamado quando o cliente clica "Aplicar" no checkout |
 | POST | `/criar-preferencia` | corpo `{ itens, frete:{cep,uf}, cupom, comprador }` → `{ init_point }` |
 | POST | `/webhook` | notificação de pagamento do Mercado Pago — consulta o pagamento e grava/atualiza o pedido em D1 |
-| GET | `/admin/pedidos` | (Basic Auth) lista os pedidos gravados, mais recentes primeiro |
-| GET/POST/DELETE | `/admin/cupons` | (Basic Auth) lista, cria/edita (upsert) ou apaga um cupom |
+| GET | `/admin/ping` | (Basic Auth) confere a senha |
+| GET | `/admin/pedidos` | (Basic Auth) lista os pedidos gravados (até 5.000), mais recentes primeiro |
+| POST | `/admin/pedidos/atualizar` | (Basic Auth) corpo `{ atualizacoes: [{ ref, status_envio?, rastreio?, obs? }] }` (até 40) |
+| GET/POST/DELETE | `/admin/cupons` | (Basic Auth) lista (com uso/desconto/receita), cria/edita (upsert), liga/desliga `{codigo, ativo}` ou apaga |
+| GET/POST | `/admin/config` | (Basic Auth) custos por produto, embalagem e meta mensal |
+| POST | `/admin/sincronizar` | (Basic Auth) corpo `{ dias, offset }` — busca pagamentos no Mercado Pago e grava (30 por chamada; devolve `proximo`) |
 
 ## Configuração
 
@@ -48,6 +57,22 @@ npx wrangler d1 execute santinos-db --remote --file=./schema.sql
 # Deploy
 npx wrangler deploy
 ```
+
+### Atualizando um banco que já existe (migrações)
+
+Quando o `schema.sql` ganha colunas/tabelas novas, o banco em produção precisa
+da migração **ANTES** do `wrangler deploy` (senão o código novo tenta gravar em
+colunas que ainda não existem e o webhook falha):
+
+```bash
+npx wrangler d1 execute santinos-db --remote --file=./migrations/002_painel_v2.sql
+npx wrangler deploy
+```
+
+Rodar a mesma migração duas vezes dá erro `duplicate column name` — é inofensivo,
+só significa que já foi aplicada. Depois do deploy, abra o painel → Configurações
+→ **Sincronizar** pra preencher endereço/taxas/forma de pagamento dos pedidos
+antigos.
 
 O deploy imprime a URL pública (algo como
 `https://santinos-checkout.SEU-SUBDOMINIO.workers.dev`).
@@ -129,59 +154,81 @@ etiqueta e pagamento de frete continuam manuais, no painel do Melhor Envio.
 
 ## Como funcionam os cupons
 
-Cupons ficam na tabela D1 `cupons` (ver `schema.sql`) — sem código nem deploy
-pra criar/editar/desativar, é tudo pelo painel `admin.html` do site (aba
-"Cupons"). Reutilizáveis (qualquer cliente pode usar o mesmo código quantas
-vezes quiser) — não é uso único, não tem limite de vezes usado nem data de
-expiração automática (pra desativar sem apagar o histórico, o painel só marca
-`ativo = 0`).
+Cupons ficam na tabela D1 `cupons` (ver `schema.sql`) — sem código nem deploy pra
+criar/editar/desativar: é tudo pela aba "Cupons" do painel. Reutilizáveis
+(qualquer cliente pode usar o mesmo código), com regras opcionais: **validade**
+(`expira_em`, vale até o fim do dia em Brasília), **limite de usos** (`max_usos`,
+conta pedidos que não foram recusados/cancelados/reembolsados) e **pedido mínimo**
+(`min_subtotal_centavos`). Pra desativar sem perder o histórico, o painel marca
+`ativo = 0`.
 
-Dois tipos: `percentual` (`valor` = % do subtotal) ou `fixo` (`valor` em
-CENTAVOS, abatido direto). O desconto nunca passa do subtotal (não gera valor
-negativo) e é sempre recalculado no servidor em cima do carrinho de verdade —
-o valor que o cliente vê no checkout é só uma prévia via `/validar-cupom`; o
-`/criar-preferencia` confere tudo de novo antes de mandar pro Mercado Pago.
+Dois tipos: `percentual` (`valor` = % do subtotal) ou `fixo` (`valor` em CENTAVOS).
+O desconto nunca passa do subtotal e é sempre recalculado no servidor em cima do
+carrinho de verdade — o que o cliente vê no checkout é só uma prévia via
+`/validar-cupom`; o `/criar-preferencia` confere tudo de novo e, se o cupom não
+valer mais (expirou, esgotou…), **recusa o pedido com o motivo** em vez de cobrar
+um total diferente do que o cliente viu.
 
-O desconto entra na preferência como um item `unit_price` negativo
-("Cupom X"), ao lado dos produtos e do frete.
+O desconto entra na preferência como um item `unit_price` negativo ("Cupom X"),
+com a rede de segurança descrita em "Como o webhook grava os pedidos".
 
-## Como funciona o painel de admin (`admin.html`)
+## Como funciona o painel de admin (`admin.html` + `admin/`)
 
-Login por senha única (`ADMIN_PASSWORD`, usuário fixo `"admin"`) via **HTTP
-Basic Auth** — sem sessão/cookie no servidor: a página testa a senha contra
-`/admin/pedidos` e, se der certo, guarda o header `Authorization` no
-`sessionStorage` do navegador (some ao fechar a aba) e manda ele em toda
-chamada `/admin/*` daí em diante.
+Login por senha única (`ADMIN_PASSWORD`, usuário fixo `"admin"`) via **HTTP Basic
+Auth**: a tela testa a senha em `/admin/ping` e guarda o header só no
+`sessionStorage` da aba (some ao fechar). Depois de **8 senhas erradas** seguidas,
+o IP fica bloqueado por 15 minutos (tabela `admin_falhas`); a comparação da
+senha é em tempo constante.
 
-- **Pedidos**: lista o que o webhook gravou em D1 (cliente, itens, total,
-  cupom usado, status) — mais recente primeiro, até 300 registros.
-- **Cupons**: criar, editar (reenviar o mesmo código com valor novo
-  sobrescreve), ativar/desativar e apagar — tudo direto na tela, sem tocar em
-  código.
+Telas: **Dashboard** (faturamento com comparação ao período anterior, ticket,
+lucro estimado, meta do mês, gráficos por dia/produto/estado/forma de
+pagamento/dia da semana/hora), **Pedidos** (busca, filtros, seleção em lote,
+detalhes completos com endereço/contato/itens/taxas, controle de envio e
+rastreio, etiquetas pra imprimir, CSV), **Clientes** (agrupados por CPF, VIP/
+recorrente, WhatsApp), **Cupons** (validade, limite de usos, pedido mínimo,
+desempenho), **Relatórios** (8 tipos, CSV pro Excel e impressão/PDF) e
+**Configurações** (custos, meta, sincronização com o Mercado Pago, backup).
 
-O painel é uma página estática comum (`admin.html`, sobe pra Vercel junto com
-o resto do site) — a única proteção real é a senha checada no Worker; a URL
-em si não é secreta. Sem `ADMIN_PASSWORD` configurado no Worker, o painel
-nunca deixa ninguém entrar (inclusive o Arnaldo).
+O painel é uma página estática (sobe pra Vercel junto com o site); a única
+proteção real é a senha checada aqui no Worker — a URL em si não é secreta. Todo
+dado de pedido é tratado como **não confiável** na tela (escapado; nada de
+`innerHTML` cru) e o CSV neutraliza fórmulas (`=`, `+`, `-`, `@`).
+
+**Lucro estimado** = produtos (já com desconto) − custo dos frascos − embalagem −
+taxas do Mercado Pago; o frete cobrado é tratado como repasse da etiqueta. Só
+aparece depois de informar os custos em Configurações.
 
 ## Como o webhook grava os pedidos
 
-O Mercado Pago manda `{ type: "payment", data: { id } }` pro `/webhook` a
-cada mudança de status. O Worker sempre responde `200` rápido (se falhar, o
-Mercado Pago reenvia depois) e, em paralelo, consulta
-`GET /v1/payments/{id}` pra pegar os dados completos do pagamento (status,
-valor, metadata) e grava em D1 (`INSERT ... ON CONFLICT DO UPDATE`, pela
-`external_reference` — reenvios do mesmo webhook só atualizam o status, não
-duplicam a linha).
+O Mercado Pago manda `{ type: "payment", data: { id } }` pro `/webhook` a cada
+mudança de status. O Worker responde `200` rápido (se falhar, o Mercado Pago
+reenvia) e consulta `GET /v1/payments/{id}` pra pegar o pagamento completo
+(status, valores, taxas, líquido, forma, parcelas + o `metadata`), gravando em D1
+(`INSERT ... ON CONFLICT DO UPDATE`, pela `external_reference`).
 
-Os dados do pedido (nome, e-mail, endereço, itens, cupom) vêm do `metadata`
-que `criarPreferencia` já manda pro Mercado Pago na hora de gerar o link de
-pagamento — o webhook não recebe isso de novo do cliente, só busca de volta o
-que já tinha sido enviado.
+O `metadata` (nome, e-mail, CPF, WhatsApp, endereço, itens, frete escolhido, cupom)
+vem do que `criarPreferencia` mandou ao Mercado Pago na hora de gerar o link.
+
+**Várias tentativas de pagamento no mesmo pedido** (ex.: cartão recusado e depois
+Pix aprovado): a linha só troca de pagamento se for a mesma tentativa, uma
+aprovada, ou uma mais recente enquanto o pedido ainda não estiver pago — um aviso
+atrasado de tentativa antiga nunca "rebaixa" um pedido já pago. O controle de
+envio (situação, rastreio, observações) nunca é sobrescrito por webhook/sincronização.
+
+**Sincronizar** (`/admin/sincronizar`) faz a mesma gravação em lote a partir da
+busca de pagamentos do Mercado Pago (só `external_reference` começando com
+`SNT-`; outros projetos da mesma conta ficam de fora).
+
+**Cupom no Mercado Pago:** o desconto entra como item de valor negativo. Se o
+Mercado Pago recusar isso, o Worker refaz a preferência automaticamente com um
+item único já descontado (o cliente paga o mesmo total).
 
 ## Pendências (v2)
 
 - Enviar e-mail de aviso (`NOTIFY_EMAIL`) quando um pedido é aprovado.
+- Plano grátis do Workers limita CPU a 10 ms por requisição: com milhares de
+  pedidos, a listagem do painel pode estourar — aí vale o plano pago ($5/mês) ou
+  paginar `/admin/pedidos`.
 - Manter `PRECOS`, `FRETE_REGIOES` e `PACOTES` em `src/index.js` **iguais**
   (preço/frete) ou coerentes (pacotes) com o `loja.js`.
 - Automatizar a compra da etiqueta no Melhor Envio depois do pagamento aprovado
