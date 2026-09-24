@@ -16,16 +16,21 @@ Cloudflare Worker (pasta `worker/`).
 - `loja.js` — **config no topo** (preços, frete, URL do Worker) + carrinho + checkout
 - `CNAME` — resquício do GitHub Pages; o site roda na Vercel
 
-### Backend do checkout
-- `worker/` — Cloudflare Worker que cria a preferência no Mercado Pago. Ver `worker/README.md`.
+### Backend, painel e catálogo
+- `worker/` — Cloudflare Worker: checkout, cupons, webhook do Mercado Pago, banco D1 e API do painel. Ver `worker/README.md`.
+- `api/melhor-envio.js` — função da Vercel que cota o frete no Melhor Envio (proxy do Worker).
+- `admin.html` + `admin/` — painel de administração (dashboard, pedidos, clientes, cupons, relatórios).
+- `pixel.js` — Meta Pixel. `catalogo.csv` — feed de produtos pro Meta.
+- `docs/contexto/` — contexto do projeto (não publicado no site).
 
-## O que ainda falta para vender de verdade
+## Contexto e estado atual
 
-1. Preços reais em `loja.js` **e** `worker/src/index.js` (hoje são placeholders).
-2. Valores de frete por região nos mesmos dois arquivos.
-3. Deploy do Worker + `wrangler secret put MP_ACCESS_TOKEN`, e colar a URL dele em `LOJA_CONFIG.workerUrl`.
-4. Preencher as lacunas das páginas legais (CNPJ/endereço/datas).
-5. (v2) Frete real via Melhor Envio; webhook do Worker notificando o pedido.
+**Antes de alterar qualquer coisa, leia [`docs/contexto/00-LEIA-PRIMEIRO.md`](docs/contexto/00-LEIA-PRIMEIRO.md)** —
+arquitetura, regras de trabalho, armadilhas, estado atual, pendências e histórico. Cada alteração deve deixar uma nota em
+`docs/contexto/historico/`.
+
+A loja está no ar (carrinho, checkout, frete real, cupons, Pix/cartão/boleto), com painel de administração em `admin.html`
+e catálogo pro Meta em `catalogo.csv`.
 
 Não há build nem dependências no site — é só HTML/CSS/JS puro.
 
