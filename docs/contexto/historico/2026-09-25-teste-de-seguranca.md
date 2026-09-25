@@ -44,6 +44,14 @@ injeção (SQL/XSS), enumeração de cupom, limite de taxa, e-mail/DNS do domín
 - Painel (`admin.html`) fica no mesmo domínio da loja: um XSS na loja poderia ler a sessão do painel. Mitigado por CSP + escape; se crescer, mover o painel para subdomínio.
 - CSP usa `style-src 'unsafe-inline'` (há `style=` inline nas páginas) e `img-src https:` (imagens do Instagram vêm de CDNs variáveis).
 
+## Verificação em produção (Worker publicado em 2026-09-25, wrangler 4.140.0)
+- Bindings ativos no deploy: `RL_CUPOM` (10/60 s), `RL_FRETE` (20/60 s), `RL_PEDIDO` (10/60 s), além de `DB`.
+- Reteste: preço adulterado segue ignorado (total R$ 19,90); id `constructor` → 400 (antes 502); WhatsApp numérico → 200 (antes 500);
+  cupom com id de protótipo não devolve mais `null`; webhook com id malicioso não consulta o MP.
+- **O limite de taxa da Cloudflare é aproximado (contadores por localidade, consistência eventual):** 40 requisições simultâneas passaram todas;
+  em sequência o primeiro 429 veio na 18ª tentativa (limite configurado 10). Serve contra adivinhação/abuso em massa, não como limite exato.
+  Se precisar de limite exato no futuro, usar Durable Object.
+
 ## Como reverter
 `git revert` do PR. O bloco `[[ratelimits]]` do `wrangler.toml` pode ser apagado sem efeito colateral.
 
