@@ -103,6 +103,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 ## Segurança e e-mail (2026-09-25 — ver `historico/2026-09-25-teste-de-seguranca.md` e `historico/2026-09-25-email-do-dominio.md`)
 
 - `vercel.json` aplica CSP e demais cabeçalhos. **Se adicionar serviço externo novo (script, fonte, API, iframe), liberar o domínio na CSP** ou ele será bloqueado.
+- Favicon: `favicon.ico`/`favicon-*.png`/`apple-touch-icon.png` na raiz, gerados a partir da pimenta do `logo.png` (ver `historico/2026-09-25-favicon.md`).
 - `.vercelignore` mantém `docs/` e `worker/` fora do site público.
 - Rotas públicas do Worker têm limite por IP (`[[ratelimits]]` no `wrangler.toml`; exige wrangler ≥ 4.36).
 - **E-mail:** `contato@santinos.com.br` roda no Zoho Mail (plano grátis, só webmail/app). MX, SPF, DKIM e DMARC estão no DNS da Vercel.
@@ -141,5 +142,6 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #26 | 25/09 | Teste de segurança + correções (cabeçalhos, limite de taxa, saneamento) |
 | #27–#29 | 25/09 | Notas de contexto: e-mail do domínio (Zoho), verificação do Worker em produção, teste de compra com cupom |
 | #30 | 25/09 | Fechamento do dia: guia principal atualizado para retomar em outra máquina |
+| #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).
