@@ -8,6 +8,7 @@ import dashboardView from "./views/dashboard.js";
 import pedidosView from "./views/pedidos.js";
 import clientesView from "./views/clientes.js";
 import cuponsView from "./views/cupons.js";
+import avaliacoesView from "./views/avaliacoes.js";
 import relatoriosView from "./views/relatorios.js";
 import configView from "./views/config.js";
 
@@ -15,11 +16,12 @@ const ABAS = [
   ["dashboard", "Dashboard", "dashboard"],
   ["pedidos", "Pedidos", "pedidos"],
   ["clientes", "Clientes", "clientes"],
+  ["avaliacoes", "Avaliações", "star"],
   ["cupons", "Cupons", "cupons"],
   ["relatorios", "Relatórios", "relatorios"],
   ["config", "Configurações", "config"],
 ];
-const FABRICAS = { dashboard: dashboardView, pedidos: pedidosView, clientes: clientesView, cupons: cuponsView, relatorios: relatoriosView, config: configView };
+const FABRICAS = { dashboard: dashboardView, pedidos: pedidosView, clientes: clientesView, avaliacoes: avaliacoesView, cupons: cuponsView, relatorios: relatoriosView, config: configView };
 const INTERVALO_ATUALIZACAO_MS = 45000;
 
 const $ = (id) => document.getElementById(id);
@@ -46,6 +48,7 @@ const ctx = {
     }
     irPara(aba);
   },
+  aoMudarAvaliacoes() { atualizarBadge(); },
   aoMudarPedidos() { atualizarBadge(); if (viewAtual && viewAtual.atualizar) viewAtual.atualizar(); },
   aoMudarConfig() { preparar(S.pedidos, S.config); if (viewAtual && viewAtual.atualizar) viewAtual.atualizar(); },
   recarregar: () => carregarTudo(),
@@ -75,7 +78,7 @@ function mostrarLogin(msg = "") {
 
 function sair(msg) {
   sessao.limpar();
-  S.pedidos = []; S.cupons = []; S.config = {}; S.sel.clear();
+  S.pedidos = []; S.cupons = []; S.avaliacoes = []; S.config = {}; S.sel.clear();
   mostrarLogin(typeof msg === "string" ? msg : "");
 }
 
@@ -111,13 +114,15 @@ async function carregarTudo() {
   view.classList.add("carregando");
   $("btnAtualizar").classList.add("girando");
   try {
-    const [p, c, cfg] = await Promise.all([
+    const [p, c, cfg, av] = await Promise.all([
       api("/admin/pedidos"),
       api("/admin/cupons").catch(() => ({ cupons: [] })),
       api("/admin/config").catch(() => ({ config: {}, produtos: {} })),
+      api("/admin/avaliacoes").catch(() => ({ avaliacoes: [] })), // Worker antigo (sem avaliações): segue sem elas
     ]);
     S.pedidos = p.pedidos || [];
     S.cupons = c.cupons || [];
+    S.avaliacoes = av.avaliacoes || [];
     S.config = cfg.config || {};
     S.produtos = cfg.produtos || {};
     preparar(S.pedidos, S.config);
@@ -144,6 +149,7 @@ async function atualizarSilencioso() {
   if (document.hidden || telaApp.hidden) return;
   try {
     const p = await api("/admin/pedidos");
+    api("/admin/avaliacoes").then((d) => { S.avaliacoes = d.avaliacoes || []; atualizarBadge(); if (viewAtual && viewAtual.atualizar) viewAtual.atualizar(); }).catch(() => {});
     const novos = p.pedidos || [];
     const nova = assinatura(novos);
     if (nova === assinaturaPedidos) return atualizarCarimbo();
@@ -167,15 +173,18 @@ function atualizarCarimbo() {
 
 function atualizarBadge() {
   const n = S.pedidos.filter((p) => p._pago && (p.status_envio || "novo") === "novo").length;
-  const b = document.querySelector('[data-aba="pedidos"] .nav-badge');
-  if (b) { b.textContent = String(n); b.hidden = n === 0; }
-  document.title = `${n ? `(${n}) ` : ""}Admin — Santino's`;
+  const pend = S.avaliacoes.filter((a) => a.status === "pendente").length;
+  for (const [aba, qtd] of [["pedidos", n], ["avaliacoes", pend]]) {
+    const b = document.querySelector(`[data-aba="${aba}"] .nav-badge`);
+    if (b) { b.textContent = String(qtd); b.hidden = qtd === 0; }
+  }
+  document.title = `${n + pend ? `(${n + pend}) ` : ""}Admin — Santino's`;
 }
 
 /* ---------------- navegação e filtro de período ---------------- */
 
 function montarNav() {
-  setHTML($("nav"), html`${ABAS.map(([id, rot, ic]) => html`<a href="#${id}" class="nav-item" data-aba="${id}">${icone(ic, 18)}<span>${rot}</span>${id === "pedidos" ? html`<span class="nav-badge" hidden></span>` : ""}</a>`)}`);
+  setHTML($("nav"), html`${ABAS.map(([id, rot, ic]) => html`<a href="#${id}" class="nav-item" data-aba="${id}">${icone(ic, 18)}<span>${rot}</span>${id === "pedidos" || id === "avaliacoes" ? html`<span class="nav-badge" hidden></span>` : ""}</a>`)}`);
 }
 
 function marcarNav() {

@@ -56,3 +56,10 @@ namespace_id = "1003"
   [ratelimits.simple]
   limit = 10
   period = 60
+
+[[ratelimits]]
+name = "RL_AVALIAR"
+namespace_id = "1004"
+  [ratelimits.simple]
+  limit = 5
+  period = 60

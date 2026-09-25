@@ -1,6 +1,6 @@
 # Santino's — contexto do projeto (LEIA ANTES DE ALTERAR QUALQUER COISA)
 
-Documento vivo. Última atualização: **2026-09-25 (sexta, fechamento do dia)**.
+Documento vivo. Última atualização: **2026-09-25 (avaliações de produtos, favicon)**.
 
 ## Regras de trabalho (definidas pelo Arnaldo em 2026-09-24)
 
@@ -31,10 +31,11 @@ Cliente ──> Site estático (Vercel, repo arnaldohungria/santinos, branch mai
         https://santinos-checkout.santinos.workers.dev
               │  /calcular-frete ─────> Vercel Function api/melhor-envio.js ──> Melhor Envio (cotação)
               │  /validar-cupom, /criar-preferencia ──> Mercado Pago Checkout Pro
+              │  /avaliar (POST), /avaliacoes (GET) ──> avaliações de produtos (só quem comprou; a loja aprova)
               │  /webhook <── Mercado Pago (pagamento) ──> grava pedido no D1
               │  /admin/*  (Basic Auth) <── painel admin.html
               ▼
-        D1 "santinos-db" (id 20fefdbd-c5ac-46a7-889d-16a5bce7bd6b): pedidos, cupons, config, admin_falhas
+        D1 "santinos-db" (id 20fefdbd-c5ac-46a7-889d-16a5bce7bd6b): pedidos, cupons, config, admin_falhas, avaliacoes
 ```
 
 | Peça | Onde | Detalhe |
@@ -44,6 +45,7 @@ Cliente ──> Site estático (Vercel, repo arnaldohungria/santinos, branch mai
 | Worker | `worker/` | Secrets: `MP_ACCESS_TOKEN`, `INTERNAL_SHARED_SECRET` (igual ao da Vercel), `ADMIN_PASSWORD`. Vars em `worker/wrangler.toml` |
 | Pagamento | Mercado Pago Checkout Pro | Pix, cartão, boleto; redireciona pro MP e volta em `pedido.html` |
 | Painel | `admin.html` + `admin/` | Dashboard, pedidos, clientes, cupons, relatórios, config. Usuário `admin` |
+| Avaliações | `avaliar.html` + `avaliacoes.js` (site), `worker/src/avaliacoes.js`, aba "Avaliações" do painel | Nota 1–5 + comentário, **só de quem comprou** (nº do pedido + e-mail), **publica só depois da aprovação** no painel. Ver `historico/2026-09-25-avaliacoes-de-produtos.md` |
 | Meta Pixel | `pixel.js` | ID `1066393226136565`; eventos ViewContent/AddToCart/InitiateCheckout/Purchase em `loja.js` |
 | Catálogo Meta | `catalogo.csv` → <https://www.santinos.com.br/catalogo.csv> | IDs `suave`/`defumado`/`extra-forte` = `content_ids` do Pixel |
 | Instagram | Behold.so (feed `pq4swuZKZCYr2UfelzGh`) | Galeria na home (`initInstagram` em `loja.js`) |
@@ -56,7 +58,8 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
   `beholdFeedId`), carrinho, checkout (ViaCEP, opções de frete, cupom), retorno do pagamento, eventos do Pixel.
 - `worker/src/index.js` — checkout (frete, cupom, preferência do MP, webhook). `admin.js` (API do painel, login com
   bloqueio), `pedidos.js` (grava/sincroniza pagamentos), `cupons.js` (regras), `catalogo.js` (**preços — cópia-verdade**), `util.js`.
-- `worker/schema.sql` (banco novo) e `worker/migrations/` (banco existente — rodar **antes** do deploy).
+- `worker/schema.sql` (banco novo) e `worker/migrations/` (banco existente — rodar **antes** do deploy; a mais recente é `003_avaliacoes.sql`).
+- `worker/test/*.test.mjs` — testes sem Cloudflare (D1 falso em `node:sqlite`): `node worker/test/avaliacoes.test.mjs` e `node worker/test/checkout.test.mjs`.
 - `admin/` — módulos ES do painel (`app.js` casca, `views/*` telas, `dados.js` regras, `charts.js`, `relatorios-def.js`, `impressao.js`).
 - `worker/README.md` — documentação técnica detalhada (rotas, cupons, webhook, painel).
 
@@ -75,6 +78,8 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 - CSS: o atributo `[hidden]` só funciona porque `style.css` tem `[hidden]{display:none!important}` (classes com `display:flex` o anulavam).
 - **Dados de pedido são não confiáveis** (vêm do cliente): no painel tudo passa pela tag `html` (escapa por padrão) e o CSV neutraliza fórmulas.
 - Desconto de cupom vai ao Mercado Pago como item de valor **negativo**; há fallback automático (item único já descontado se o MP recusar).
+- **Fins de linha:** o repo guarda LF, mas no Windows os arquivos ficam CRLF (autocrlf). Ao editar por script, normalize `\r\n` → `\n` antes de casar textos e converta de volta ao gravar; nunca faça `replace(/\n/g, "\r\n")` em arquivo que já tem CRLF (vira `\r\r\n` e o git trata como binário).
+- Avaliações: o pedido só pode ser avaliado com pagamento `approved` **e** `status_envio` = enviado/entregue — se o Arnaldo esquecer de marcar como enviado no painel, o cliente não consegue avaliar.
 - Plano grátis do Workers limita CPU/consultas: sincronização é paginada (30 por vez) e lotes de envio têm no máx. 40.
 - `wrangler d1 ... --local` dá "internal error" em Windows neste ambiente; para testar o Worker sem conta usei um servidor Node
   com `node:sqlite` fazendo de D1 (não está no repo).
@@ -88,11 +93,14 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
   `historico/2026-09-25-teste-de-seguranca.md`). Não há migração de banco pendente. O clone do Arnaldo no desktop está atualizado; **no notebook, fazer `git pull` antes de qualquer coisa.**
 - **E-mail profissional funcionando:** `contato@santinos.com.br` (Zoho grátis; recebe e responde; SPF/DKIM/DMARC ok e conferidos).
 - **Site público:** cabeçalhos de segurança (CSP etc.) ativos; `docs/` e `worker/` não são servidos.
+- **Avaliações de produtos (PR desta data): código pronto; para entrar em produção o Arnaldo precisa rodar a migração 003 e o `wrangler deploy`** (passos em `historico/2026-09-25-avaliacoes-de-produtos.md`). Até lá as seções de avaliação ficam ocultas no site. **Confirmar aqui se já foi feito.**
+- **Favicon** (pimenta do logo) em todas as páginas.
 - **Em andamento (Arnaldo, no Meta Business Suite):** importar o catálogo — Commerce Manager → Adicionar itens → **Arquivo de dados** →
   feed agendado diário com a URL do `catalogo.csv`, moeda BRL. Perfil do WhatsApp/Instagram sendo personalizado. **Divulgação (tráfego pago) prestes a começar.**
 
 ## Por onde retomar (próximos passos, em ordem)
 
+0. **Publicar as avaliações:** `git pull` → `cd worker` → migração 003 → `npx wrangler deploy`; depois testar com uma compra (marcar como enviado no painel → abrir o link de avaliação → aprovar na aba Avaliações).
 1. **Arnaldo mede e pesa as caixas reais** (1, 2, 3 e 6 frascos, com o frasco dentro) → o Claude atualiza `PACOTES` em `worker/src/index.js`, faz PR e o Arnaldo roda `wrangler deploy`.
 2. **Arnaldo:** verificação em duas etapas (Zoho, Vercel, GitHub, Cloudflare, Mercado Pago, Melhor Envio, Meta) e senha do painel com ≥ 16 caracteres.
 3. **Meta:** Arnaldo traz a meta-tag de verificação do domínio → o Claude coloca no `<head>` do `index.html` (PR). Confirmar resultado da importação do catálogo (possível duplicação com produtos cadastrados à mão).
@@ -120,7 +128,8 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 6. API de Conversões do Meta (só o Pixel de navegador está ativo).
 7. Estoque (o catálogo marca tudo como "em stock"; não há controle).
 8. Peso/caixa reais para calibrar `PACOTES` do frete (hoje é estimativa; frasco cheio arredondado pra 150 g).
-9. Regularização de rótulo/produção (ANVISA, NF) — o Arnaldo situou pra 2027.
+9. Avaliações: dados estruturados (JSON-LD) para estrelas no Google, e-mail automático pedindo avaliação, limite/cache na leitura pública.
+10. Regularização de rótulo/produção (ANVISA, NF) — o Arnaldo situou pra 2027.
 
 ## Histórico de PRs (todos mergeados em `main`)
 
@@ -142,6 +151,8 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #26 | 25/09 | Teste de segurança + correções (cabeçalhos, limite de taxa, saneamento) |
 | #27–#29 | 25/09 | Notas de contexto: e-mail do domínio (Zoho), verificação do Worker em produção, teste de compra com cupom |
 | #30 | 25/09 | Fechamento do dia: guia principal atualizado para retomar em outra máquina |
+| #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
+| #32 | 25/09 | Avaliações de produtos (só compradores; aprovação no painel) |
 | #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).

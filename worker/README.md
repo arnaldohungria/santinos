@@ -233,3 +233,11 @@ item único já descontado (o cliente paga o mesmo total).
   (preço/frete) ou coerentes (pacotes) com o `loja.js`.
 - Automatizar a compra da etiqueta no Melhor Envio depois do pagamento aprovado
   (hoje é manual — fora do escopo deste Worker de propósito).
+
+## Avaliações de produtos
+
+- `POST /avaliar` (público, limite `RL_AVALIAR`): corpo `{produto, nota, pedido, email, nome, comentario}`. Confere no banco se o pedido existe, o e-mail bate, o pagamento está `approved` e o pedido já foi `enviado`/`entregue` e contém o produto. Grava como `pendente`.
+- `GET /avaliacoes?produto=suave` (público): só avaliações `aprovada`, com média e distribuição. Sem `produto`: resumo de todos.
+- Painel: `GET|DELETE /admin/avaliacoes`, `POST /admin/avaliacoes/moderar` (`{id, status?, resposta?}`).
+- Tabela `avaliacoes` — migração `migrations/003_avaliacoes.sql` (rodar antes do deploy).
+- Testes: `node worker/test/avaliacoes.test.mjs`.
