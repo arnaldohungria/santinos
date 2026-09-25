@@ -51,6 +51,20 @@ import { validarCupom } from "./cupons.js";
 import { salvarPedido } from "./pedidos.js";
 import { handleAdmin } from "./admin.js";
 
+// Limite de requisições por IP nas rotas públicas (binding "ratelimits" do wrangler.toml).
+// Se o binding não existir (ex.: config antiga), não bloqueia nada — só deixa de limitar.
+async function estourouLimite(env, binding, req) {
+  const rl = env[binding];
+  if (!rl) return false;
+  try {
+    const { success } = await rl.limit({ key: req.headers.get("CF-Connecting-IP") || "desconhecido" });
+    return !success;
+  } catch {
+    return false;
+  }
+}
+const MUITAS = (env) => json({ erro: "Muitas requisições. Aguarde um minuto e tente de novo." }, 429, env, { "Retry-After": "60" });
+
 // Frete fixo por região, em CENTAVOS — usado só como FALLBACK se o Melhor
 // Envio não responder (API fora do ar, sem token configurado, CEP não
 // atendido pelas transportadoras cotadas). >>> ainda placeholder <<<
@@ -221,8 +235,8 @@ async function calcularFreteEndpoint(req, env) {
   let subtotal = 0;
   let qtdTotal = 0;
   for (const it of itensReq) {
-    const prod = PRECOS[it.id];
-    const qtd = Math.floor(Number(it.qtd));
+    const prod = PRECOS[it?.id];
+    const qtd = Math.floor(Number(it?.qtd));
     if (!prod || !Number.isFinite(qtd) || qtd < 1) continue;
     subtotal += prod.preco * qtd;
     qtdTotal += qtd;
@@ -249,8 +263,8 @@ async function validarCupomEndpoint(req, env) {
   const itensReq = Array.isArray(body.itens) ? body.itens : [];
   let subtotal = 0;
   for (const it of itensReq) {
-    const prod = PRECOS[it.id];
-    const qtd = Math.floor(Number(it.qtd));
+    const prod = PRECOS[it?.id];
+    const qtd = Math.floor(Number(it?.qtd));
     if (!prod || !Number.isFinite(qtd) || qtd < 1) continue;
     subtotal += prod.preco * qtd;
   }
@@ -260,6 +274,30 @@ async function validarCupomEndpoint(req, env) {
   const { ok, ...cupom } = r;
   return json({ valido: true, ...cupom }, 200, env);
 }
+
+// Dados do comprador vêm do navegador (não confiáveis): força texto, corta tamanho e
+// só aceita o formato esperado do endereço. Nada aqui é usado em SQL/HTML sem escape.
+function sanearComprador(bruto) {
+  const c = bruto && typeof bruto === "object" ? bruto : {};
+  const txt = (v, max) => (typeof v === "string" || typeof v === "number" ? String(v).slice(0, max) : "");
+  let endereco = null;
+  if (c.endereco && typeof c.endereco === "object") {
+    endereco = {};
+    for (const k of ["cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf"]) {
+      if (c.endereco[k] !== undefined) endereco[k] = txt(c.endereco[k], 120);
+    }
+  }
+  return {
+    nome: txt(c.nome, 80),
+    email: txt(c.email, 120),
+    cpf: txt(c.cpf, 20),
+    whatsapp: txt(c.whatsapp, 20),
+    endereco,
+  };
+}
+
+// Limites do carrinho (o site nunca passa disso; é só contra abuso).
+const MAX_LINHAS_CARRINHO = 20;
 
 async function criarPreferencia(req, env) {
   if (!env.MP_ACCESS_TOKEN) {
@@ -275,16 +313,17 @@ async function criarPreferencia(req, env) {
 
   const itensReq = Array.isArray(body.itens) ? body.itens : [];
   if (itensReq.length === 0) return json({ erro: "Carrinho vazio." }, 400, env);
+  if (itensReq.length > MAX_LINHAS_CARRINHO) return json({ erro: "Carrinho grande demais." }, 400, env);
 
   // Revalida itens e recalcula subtotal pelo servidor (ignora qualquer preço vindo do cliente).
   const itensMP = [];
   let subtotal = 0;
   let qtdTotal = 0;
   for (const it of itensReq) {
-    const prod = PRECOS[it.id];
-    const qtd = Math.floor(Number(it.qtd));
+    const prod = PRECOS[it?.id];
+    const qtd = Math.floor(Number(it?.qtd));
     if (!prod || !Number.isFinite(qtd) || qtd < 1 || qtd > 99) {
-      return json({ erro: `Item inválido: ${it.id}` }, 400, env);
+      return json({ erro: `Item inválido: ${String(it?.id).slice(0, 40)}` }, 400, env);
     }
     subtotal += prod.preco * qtd;
     qtdTotal += qtd;
@@ -337,7 +376,7 @@ async function criarPreferencia(req, env) {
     });
   }
 
-  const c = body.comprador || {};
+  const c = sanearComprador(body.comprador);
   const externalRef = "SNT-" + Date.now().toString(36).toUpperCase();
   const site = (env.SITE_URL || "https://www.santinos.com.br").replace(/\/$/, "");
 
@@ -447,7 +486,8 @@ async function webhook(req, env) {
   const id = payload?.data?.id || url.searchParams.get("data.id");
   console.log("webhook MP recebido:", tipo, id);
 
-  if (tipo === "payment" && id && env.MP_ACCESS_TOKEN) {
+  // O id vai direto na URL da API do MP: só aceita número (evita "../" e afins).
+  if (tipo === "payment" && /^[0-9]{1,20}$/.test(String(id || "")) && env.MP_ACCESS_TOKEN) {
     try {
       const r = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
         headers: { Authorization: `Bearer ${env.MP_ACCESS_TOKEN}` },
@@ -497,14 +537,17 @@ async function handleRequest(req, env) {
   }
 
   if (url.pathname === "/calcular-frete" && req.method === "POST") {
+    if (await estourouLimite(env, "RL_FRETE", req)) return MUITAS(env);
     return calcularFreteEndpoint(req, env);
   }
 
   if (url.pathname === "/validar-cupom" && req.method === "POST") {
+    if (await estourouLimite(env, "RL_CUPOM", req)) return MUITAS(env);
     return validarCupomEndpoint(req, env);
   }
 
   if (url.pathname === "/criar-preferencia" && req.method === "POST") {
+    if (await estourouLimite(env, "RL_PEDIDO", req)) return MUITAS(env);
     return criarPreferencia(req, env);
   }
 

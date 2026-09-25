@@ -1,6 +1,6 @@
 # Santino's — contexto do projeto (LEIA ANTES DE ALTERAR QUALQUER COISA)
 
-Documento vivo. Última atualização: **2026-09-24**.
+Documento vivo. Última atualização: **2026-09-25**.
 
 ## Regras de trabalho (definidas pelo Arnaldo em 2026-09-24)
 
@@ -113,5 +113,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #20–#22 | 17/09 | Painel admin v1 + banco D1; ajuste de botão |
 | #23 | 18/09 | Painel admin v2 (dashboard, pedidos completos, clientes, cupons avançados, relatórios) |
 | #24 | 21/09 | Planilha de catálogo pro Meta |
+| #25 | 24/09 | Contexto do projeto no repositório (`docs/contexto`) |
+| #26 | 25/09 | Teste de segurança + correções (cabeçalhos, limite de taxa, saneamento) |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).
