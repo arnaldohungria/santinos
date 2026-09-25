@@ -32,3 +32,27 @@ database_id = "20fefdbd-c5ac-46a7-889d-16a5bce7bd6b"
 # O MELHOR_ENVIO_TOKEN e o ORIGEM_CEP não ficam mais aqui — foram pra Vercel,
 # veja api/melhor-envio.js.
 # ADMIN_PASSWORD é a senha do painel /admin.html (usuário fixo "admin").
+
+# Limite de requisições por IP nas rotas públicas (evita adivinhação de cupom e
+# gasto da cota de cotação de frete). Precisa de wrangler >= 4.36. Se o deploy
+# reclamar deste bloco, apague-o — o Worker funciona sem (só deixa de limitar).
+[[ratelimits]]
+name = "RL_CUPOM"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[[ratelimits]]
+name = "RL_FRETE"
+namespace_id = "1002"
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
+[[ratelimits]]
+name = "RL_PEDIDO"
+namespace_id = "1003"
+  [ratelimits.simple]
+  limit = 10
+  period = 60

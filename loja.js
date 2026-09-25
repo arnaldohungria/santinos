@@ -223,6 +223,15 @@ function renderContador() {
   el.dataset.count = String(n);
 }
 
+// Escapa texto vindo de fora (Worker, Behold) antes de ir pra dentro de innerHTML.
+function esc(v) {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+// Só aceita link/imagem https (bloqueia javascript: e data: vindos de terceiros).
+function urlHttps(v) {
+  try { const u = new URL(String(v)); return u.protocol === "https:" ? u.href : ""; } catch { return ""; }
+}
+
 function renderDrawer() {
   const lista = document.getElementById("cartItems");
   const vazio = document.getElementById("cartEmpty");
@@ -426,9 +435,9 @@ function initCheckout() {
         const prazo = o.prazo ? `${o.prazo} dia${o.prazo > 1 ? "s" : ""} úteis` : "";
         const retirada = o.retirada ? " · retirada em ponto" : "";
         return `<label class="frete-opcao">
-          <input type="radio" name="freteOpcao" value="${o.id}" ${i === 0 ? "checked" : ""}>
+          <input type="radio" name="freteOpcao" value="${esc(o.id)}" ${i === 0 ? "checked" : ""}>
           <span class="frete-opcao-info">
-            <span class="frete-opcao-nome">${o.rotulo}</span>
+            <span class="frete-opcao-nome">${esc(o.rotulo)}</span>
             <span class="frete-opcao-detalhe">${[prazo, retirada].filter(Boolean).join("") || "&nbsp;"}</span>
           </span>
           <span class="frete-opcao-preco">${o.valor === 0 ? "Grátis" : fmt(o.valor)}</span>
@@ -553,7 +562,7 @@ function initCheckout() {
       // que o Worker devolveu (já com frete e desconto de cupom aplicados de
       // verdade), em vez de recalcular aqui — evita divergência.
       sessionStorage.setItem("santinos_ultimo_pedido", JSON.stringify({
-        itens: pedido.itens, total: d.total_centavos, criadoEm: Date.now(),
+        itens: pedido.itens, total: d.total_centavos, ref: d.external_reference, criadoEm: Date.now(),
       }));
       window.location.href = d.init_point;
     } catch (err) {
@@ -600,7 +609,7 @@ function initPedido() {
     if (!jaRastreado && typeof metaTrack === "function") {
       try {
         const ultimo = JSON.parse(sessionStorage.getItem("santinos_ultimo_pedido") || "null");
-        if (ultimo) {
+        if (ultimo && ref && ultimo.ref === ref) {
           metaTrack("Purchase", {
             content_ids: (ultimo.itens || []).map((i) => i.id),
             content_type: "product",
@@ -648,10 +657,10 @@ async function initInstagram() {
           p.mediaUrl ||
           "";
         const legenda = (p.prunedCaption || "").trim() || "Post da Santino's no Instagram";
-        const cap = legenda.slice(0, 140).replace(/"/g, "&quot;");
+        const cap = esc(legenda.slice(0, 140));
         const marca = p.mediaType === "VIDEO" ? '<span class="insta-video" aria-hidden="true"></span>' : "";
-        return `<a class="insta-post" href="${p.permalink}" target="_blank" rel="noopener" aria-label="${cap}">
-          <img src="${img}" alt="${cap}" loading="lazy" referrerpolicy="no-referrer">${marca}
+        return `<a class="insta-post" href="${esc(urlHttps(p.permalink))}" target="_blank" rel="noopener" aria-label="${cap}">
+          <img src="${esc(urlHttps(img))}" alt="${cap}" loading="lazy" referrerpolicy="no-referrer">${marca}
         </a>`;
       })
       .join("");
