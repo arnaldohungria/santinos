@@ -84,6 +84,14 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 - **Em andamento (Arnaldo, no Meta Business Suite):** importar o catálogo — Commerce Manager → Adicionar itens → **Arquivo de dados** →
   feed agendado diário com a URL do `catalogo.csv`, moeda BRL. Perfil do WhatsApp/Instagram sendo personalizado.
 
+## Segurança e e-mail (2026-09-25 — ver `historico/2026-09-25-teste-de-seguranca.md` e `historico/2026-09-25-email-do-dominio.md`)
+
+- `vercel.json` aplica CSP e demais cabeçalhos. **Se adicionar serviço externo novo (script, fonte, API, iframe), liberar o domínio na CSP** ou ele será bloqueado.
+- `.vercelignore` mantém `docs/` e `worker/` fora do site público.
+- Rotas públicas do Worker têm limite por IP (`[[ratelimits]]` no `wrangler.toml`; exige wrangler ≥ 4.36).
+- **E-mail:** `contato@santinos.com.br` roda no Zoho Mail (plano grátis, só webmail/app). MX, SPF, DKIM e DMARC estão no DNS da Vercel.
+  Só pode haver **um** registro SPF; DMARC está em `p=none`.
+
 ## Pendências
 
 1. **Verificação do domínio `santinos.com.br` no Meta** — precisa da meta-tag `facebook-domain-verification` (o Arnaldo gera em
@@ -91,7 +99,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 2. **Testar pedido com cupom até a tela do Mercado Pago** (aceitação do item negativo nunca foi confirmada com o MP real; fallback existe).
 3. Arnaldo preencher **custos** (frascos e embalagem) e a meta em Painel → Configurações, para o lucro estimado aparecer.
 4. Páginas legais com lacunas (CNPJ, endereço, datas, comarca).
-5. E-mail de aviso de pedido novo (`NOTIFY_EMAIL` existe como variável, **não implementado**).
+5. E-mail de aviso de pedido novo (`NOTIFY_EMAIL` existe como variável, **não implementado**; já existe a caixa `contato@`, falta um serviço de envio).
 6. API de Conversões do Meta (só o Pixel de navegador está ativo).
 7. Estoque (o catálogo marca tudo como "em stock"; não há controle).
 8. Peso/caixa reais para calibrar `PACOTES` do frete (hoje é estimativa; frasco cheio arredondado pra 150 g).
@@ -113,6 +121,8 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #20–#22 | 17/09 | Painel admin v1 + banco D1; ajuste de botão |
 | #23 | 18/09 | Painel admin v2 (dashboard, pedidos completos, clientes, cupons avançados, relatórios) |
 | #24 | 21/09 | Planilha de catálogo pro Meta |
+| #25 | 24/09 | Contexto do projeto no repositório (`docs/contexto`) |
+| #26 | 25/09 | Teste de segurança + correções (cabeçalhos, limite de taxa, saneamento) |
 | #25 | 24/09 | Contexto do projeto no repositório (`docs/contexto`) |
 | #26 | 25/09 | Teste de segurança + correções (cabeçalhos, limite de taxa, saneamento) |
 
