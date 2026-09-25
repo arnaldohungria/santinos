@@ -1,6 +1,6 @@
 # Santino's — contexto do projeto (LEIA ANTES DE ALTERAR QUALQUER COISA)
 
-Documento vivo. Última atualização: **2026-09-25**.
+Documento vivo. Última atualização: **2026-09-25 (sexta, fechamento do dia)**.
 
 ## Regras de trabalho (definidas pelo Arnaldo em 2026-09-24)
 
@@ -65,8 +65,10 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 - **Preço existe em dois lugares:** `loja.js` (só exibe) e `worker/src/catalogo.js` (é o que cobra). Mudou preço → mudar os dois **e** `catalogo.csv`.
 - **Deploy do Worker:** `git pull` → (se houver migração nova) `npx wrangler d1 execute santinos-db --remote --file=./migrations/<arquivo>.sql`
   → `npx wrangler deploy`. Migração **antes** do deploy, senão o webhook falha e pedidos se perdem.
-- No PowerShell do Arnaldo, sempre entrar antes na pasta `worker` do clone dele (no notebook: `C:\Users\arnal\santinos-site\worker`).
-  PowerShell aberto em `C:\Windows\System32` faz o wrangler falhar com EPERM.
+- No PowerShell do Arnaldo, sempre entrar antes na pasta `worker` do clone dele. **O caminho muda conforme a máquina:**
+  desktop da empresa `C:\Users\arnaldo.hungria\santinos-site\worker`; notebook `C:\Users\arnal\santinos-site\worker`.
+  PowerShell aberto em `C:\Windows\System32` faz o wrangler falhar com EPERM. Antes de dar um `cd`, confirmar em qual máquina ele está.
+  (Em 2026-09-25 o wrangler do desktop era 4.140.0; `[[ratelimits]]` exige ≥ 4.36 — no notebook conferir com `npx wrangler --version`.)
 - **Token/secret com "•" (bolinha de máscara)** colado no lugar do valor real dá erro de `ByteString ... 8226` — foi a causa raiz do
   problema de frete (que parecia bloqueio da Cloudflare). Copiar o valor do campo sem máscara.
 - O Worker chama o proxy de frete pelo domínio `*.vercel.app` (`FRETE_PROXY_URL`), não pelo `santinos.com.br`.
@@ -77,12 +79,26 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 - `wrangler d1 ... --local` dá "internal error" em Windows neste ambiente; para testar o Worker sem conta usei um servidor Node
   com `node:sqlite` fazendo de D1 (não está no repo).
 
-## Estado atual (2026-09-24)
+## Estado atual (sexta, 2026-09-25)
 
-- **No ar e funcionando:** loja completa (carrinho, checkout, frete real com escolha de transportadora, cupons, Pix/cartão/boleto),
-  Meta Pixel, painel admin v2 (Worker v2 deployado e banco migrado em 2026-09-21), catálogo em `catalogo.csv`. **Já houve pedido real.**
+- **Tudo no ar e verificado em produção.** Loja completa (carrinho, checkout, frete real com escolha de transportadora, cupons, Pix/cartão/boleto),
+  Meta Pixel, painel admin v2, catálogo em `catalogo.csv`.
+- **Compra real de ponta a ponta já testada** (2026-09-25, com cupom): pagamento aprovado, desconto aceito pelo Mercado Pago, pedido correto no painel.
+- **Worker publicado em 2026-09-25** com as correções de segurança e os limites de requisição (verificado em produção — ver
+  `historico/2026-09-25-teste-de-seguranca.md`). Não há migração de banco pendente. O clone do Arnaldo no desktop está atualizado; **no notebook, fazer `git pull` antes de qualquer coisa.**
+- **E-mail profissional funcionando:** `contato@santinos.com.br` (Zoho grátis; recebe e responde; SPF/DKIM/DMARC ok e conferidos).
+- **Site público:** cabeçalhos de segurança (CSP etc.) ativos; `docs/` e `worker/` não são servidos.
 - **Em andamento (Arnaldo, no Meta Business Suite):** importar o catálogo — Commerce Manager → Adicionar itens → **Arquivo de dados** →
-  feed agendado diário com a URL do `catalogo.csv`, moeda BRL. Perfil do WhatsApp/Instagram sendo personalizado.
+  feed agendado diário com a URL do `catalogo.csv`, moeda BRL. Perfil do WhatsApp/Instagram sendo personalizado. **Divulgação (tráfego pago) prestes a começar.**
+
+## Por onde retomar (próximos passos, em ordem)
+
+1. **Arnaldo mede e pesa as caixas reais** (1, 2, 3 e 6 frascos, com o frasco dentro) → o Claude atualiza `PACOTES` em `worker/src/index.js`, faz PR e o Arnaldo roda `wrangler deploy`.
+2. **Arnaldo:** verificação em duas etapas (Zoho, Vercel, GitHub, Cloudflare, Mercado Pago, Melhor Envio, Meta) e senha do painel com ≥ 16 caracteres.
+3. **Meta:** Arnaldo traz a meta-tag de verificação do domínio → o Claude coloca no `<head>` do `index.html` (PR). Confirmar resultado da importação do catálogo (possível duplicação com produtos cadastrados à mão).
+4. Arnaldo preenche **custos** e meta no painel (Configurações).
+5. Despachar o pedido de teste (ou estornar) e validar o fluxo de etiqueta/rastreio no painel.
+6. Depois: aviso de pedido novo por e-mail, API de Conversões do Meta, páginas legais completas (ver Pendências).
 
 ## Segurança e e-mail (2026-09-25 — ver `historico/2026-09-25-teste-de-seguranca.md` e `historico/2026-09-25-email-do-dominio.md`)
 
@@ -124,7 +140,6 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #25 | 24/09 | Contexto do projeto no repositório (`docs/contexto`) |
 | #26 | 25/09 | Teste de segurança + correções (cabeçalhos, limite de taxa, saneamento) |
 | #27–#29 | 25/09 | Notas de contexto: e-mail do domínio (Zoho), verificação do Worker em produção, teste de compra com cupom |
-| #25 | 24/09 | Contexto do projeto no repositório (`docs/contexto`) |
-| #26 | 25/09 | Teste de segurança + correções (cabeçalhos, limite de taxa, saneamento) |
+| #30 | 25/09 | Fechamento do dia: guia principal atualizado para retomar em outra máquina |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).
