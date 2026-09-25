@@ -79,6 +79,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 - **Dados de pedido são não confiáveis** (vêm do cliente): no painel tudo passa pela tag `html` (escapa por padrão) e o CSV neutraliza fórmulas.
 - Desconto de cupom vai ao Mercado Pago como item de valor **negativo**; há fallback automático (item único já descontado se o MP recusar).
 - **Fins de linha:** o repo guarda LF, mas no Windows os arquivos ficam CRLF (autocrlf). Ao editar por script, normalize `\r\n` → `\n` antes de casar textos e converta de volta ao gravar; nunca faça `replace(/\n/g, "\r\n")` em arquivo que já tem CRLF (vira `\r\r\n` e o git trata como binário).
+- **Nunca criar avaliações/depoimentos fictícios** (decisão do Arnaldo após conversa em 2026-09-25: é publicidade enganosa). Prova social só com compras/depoimentos reais.
 - Avaliações: o pedido só pode ser avaliado com pagamento `approved` **e** `status_envio` = enviado/entregue — se o Arnaldo esquecer de marcar como enviado no painel, o cliente não consegue avaliar.
 - Plano grátis do Workers limita CPU/consultas: sincronização é paginada (30 por vez) e lotes de envio têm no máx. 40.
 - `wrangler d1 ... --local` dá "internal error" em Windows neste ambiente; para testar o Worker sem conta usei um servidor Node
@@ -153,6 +154,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #30 | 25/09 | Fechamento do dia: guia principal atualizado para retomar em outra máquina |
 | #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
 | #32 | 25/09 | Avaliações de produtos (só compradores; aprovação no painel) |
+| #33 | 25/09 | Título da seção de avaliações ("Avaliações de quem já comprou:"); estado vazio só com o título |
 | #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).
