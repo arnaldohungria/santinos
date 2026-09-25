@@ -96,7 +96,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 
 1. **Verificação do domínio `santinos.com.br` no Meta** — precisa da meta-tag `facebook-domain-verification` (o Arnaldo gera em
    Configurações do negócio → Segurança da marca → Domínios → Meta-tag e passa; colocar no `<head>` do `index.html`).
-2. **Testar pedido com cupom até a tela do Mercado Pago** (aceitação do item negativo nunca foi confirmada com o MP real; fallback existe).
+2. ~~Testar pedido com cupom~~ — **feito em 2026-09-25** (compra real com cupom aprovada; desconto aceito pelo MP e pedido correto no painel).
 3. Arnaldo preencher **custos** (frascos e embalagem) e a meta em Painel → Configurações, para o lucro estimado aparecer.
 4. Páginas legais com lacunas (CNPJ, endereço, datas, comarca).
 5. E-mail de aviso de pedido novo (`NOTIFY_EMAIL` existe como variável, **não implementado**; já existe a caixa `contato@`, falta um serviço de envio).
@@ -123,6 +123,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #24 | 21/09 | Planilha de catálogo pro Meta |
 | #25 | 24/09 | Contexto do projeto no repositório (`docs/contexto`) |
 | #26 | 25/09 | Teste de segurança + correções (cabeçalhos, limite de taxa, saneamento) |
+| #27–#29 | 25/09 | Notas de contexto: e-mail do domínio (Zoho), verificação do Worker em produção, teste de compra com cupom |
 | #25 | 24/09 | Contexto do projeto no repositório (`docs/contexto`) |
 | #26 | 25/09 | Teste de segurança + correções (cabeçalhos, limite de taxa, saneamento) |
 
