@@ -94,14 +94,14 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
   `historico/2026-09-25-teste-de-seguranca.md`). Não há migração de banco pendente. O clone do Arnaldo no desktop está atualizado; **no notebook, fazer `git pull` antes de qualquer coisa.**
 - **E-mail profissional funcionando:** `contato@santinos.com.br` (Zoho grátis; recebe e responde; SPF/DKIM/DMARC ok e conferidos).
 - **Site público:** cabeçalhos de segurança (CSP etc.) ativos; `docs/` e `worker/` não são servidos.
-- **Avaliações de produtos (PR desta data): código pronto; para entrar em produção o Arnaldo precisa rodar a migração 003 e o `wrangler deploy`** (passos em `historico/2026-09-25-avaliacoes-de-produtos.md`). Até lá as seções de avaliação ficam ocultas no site. **Confirmar aqui se já foi feito.**
+- **Avaliações de produtos: no ar** (migração 003 aplicada e Worker publicado pelo Arnaldo em 2026-09-25, conferido por ele). Ainda **não há avaliações** (nem pedidos além dos de teste); a seção mostra só o título "Avaliações de quem já comprou:" até a primeira ser publicada.
 - **Favicon** (pimenta do logo) em todas as páginas.
 - **Em andamento (Arnaldo, no Meta Business Suite):** importar o catálogo — Commerce Manager → Adicionar itens → **Arquivo de dados** →
   feed agendado diário com a URL do `catalogo.csv`, moeda BRL. Perfil do WhatsApp/Instagram sendo personalizado. **Divulgação (tráfego pago) prestes a começar.**
 
 ## Por onde retomar (próximos passos, em ordem)
 
-0. **Publicar as avaliações:** `git pull` → `cd worker` → migração 003 → `npx wrangler deploy`; depois testar com uma compra (marcar como enviado no painel → abrir o link de avaliação → aprovar na aba Avaliações).
+0. **Conseguir as primeiras avaliações reais:** convidar compradores (link no WhatsApp do painel, mensagem "pedido enviado"); lembrar de marcar o pedido como **Enviado** no painel, senão o cliente não consegue avaliar. Sem avaliação fictícia.
 1. **Arnaldo mede e pesa as caixas reais** (1, 2, 3 e 6 frascos, com o frasco dentro) → o Claude atualiza `PACOTES` em `worker/src/index.js`, faz PR e o Arnaldo roda `wrangler deploy`.
 2. **Arnaldo:** verificação em duas etapas (Zoho, Vercel, GitHub, Cloudflare, Mercado Pago, Melhor Envio, Meta) e senha do painel com ≥ 16 caracteres.
 3. **Meta:** Arnaldo traz a meta-tag de verificação do domínio → o Claude coloca no `<head>` do `index.html` (PR). Confirmar resultado da importação do catálogo (possível duplicação com produtos cadastrados à mão).
