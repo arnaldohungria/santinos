@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="pixel.js"></script>
+<title>Avaliar meu molho — Santino's</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800;900&family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="avaliar">
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="wordmark">Santino's</a>
+    <a href="index.html#produtos" class="checkout-voltar">Ir para o site</a>
+  </div>
+</header>
+
+<main class="avaliar">
+  <div class="wrap">
+    <h1>Conta pra gente o que você achou</h1>
+    <p class="avaliar-intro">Sua opinião ajuda outras pessoas a escolher o molho ideal — e ajuda a Santino's a melhorar.
+      Só quem comprou pode avaliar: use o <strong>número do pedido</strong> (começa com <strong>SNT-</strong>) e o
+      <strong>e-mail da compra</strong>. Sua avaliação aparece no site depois que a gente conferir.</p>
+
+    <form class="avaliar-form" id="avForm" autocomplete="off" novalidate>
+      <label>Produto
+        <select name="produto" required></select>
+      </label>
+
+      <fieldset class="av-estrelas">
+        <legend>Sua nota</legend>
+        <div class="av-estrelas-linha">
+          <input type="radio" name="nota" id="nota5" value="5"><label for="nota5" title="5 estrelas — amei">★<span class="sr-only">5 estrelas</span></label>
+          <input type="radio" name="nota" id="nota4" value="4"><label for="nota4" title="4 estrelas — gostei">★<span class="sr-only">4 estrelas</span></label>
+          <input type="radio" name="nota" id="nota3" value="3"><label for="nota3" title="3 estrelas — mais ou menos">★<span class="sr-only">3 estrelas</span></label>
+          <input type="radio" name="nota" id="nota2" value="2"><label for="nota2" title="2 estrelas — não gostei muito">★<span class="sr-only">2 estrelas</span></label>
+          <input type="radio" name="nota" id="nota1" value="1"><label for="nota1" title="1 estrela — não gostei">★<span class="sr-only">1 estrela</span></label>
+        </div>
+      </fieldset>
+
+      <label>O que você achou? <span class="opt">(opcional)</span>
+        <textarea name="comentario" rows="5" maxlength="600" placeholder="Sabor, picância, com o que você usou…"></textarea>
+        <span class="av-contador" id="avContador" aria-hidden="true">0/600</span>
+      </label>
+
+      <label>Como quer aparecer <span class="opt">(seu primeiro nome ou apelido)</span>
+        <input type="text" name="nome" maxlength="40" required placeholder="Ex.: Ana">
+      </label>
+
+      <div class="linha-2">
+        <label>Número do pedido
+          <input type="text" name="pedido" maxlength="30" required placeholder="SNT-ABC123" style="text-transform:uppercase">
+        </label>
+        <label>E-mail usado na compra
+          <input type="email" name="email" maxlength="120" required placeholder="voce@exemplo.com" inputmode="email">
+        </label>
+      </div>
+
+      <p class="av-privacidade">Vamos mostrar no site sua nota, seu comentário e o nome que você escolheu acima. O número do pedido e o e-mail servem só para
+        confirmar a compra e <strong>não</strong> aparecem. Veja a <a href="privacidade.html">política de privacidade</a>.</p>
+
+      <p class="av-msg" id="avMsg" role="status" aria-live="polite"></p>
+      <button type="submit" class="btn btn-primary" id="avEnviar">Enviar avaliação</button>
+    </form>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <p class="wordmark wordmark-sm">Santino's</p>
+    <p class="footer-copy">© <span id="year"></span> Santino's. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script src="loja.js"></script>
+<script src="avaliacoes.js"></script>
+</body>
+</html>

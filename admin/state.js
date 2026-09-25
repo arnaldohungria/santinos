@@ -11,6 +11,7 @@ const CHAVE_PERIODO = "santinos_admin_periodo";
 export const S = {
   pedidos: [],
   cupons: [],
+  avaliacoes: [],
   config: {},
   produtos: {},
   aba: "dashboard",
@@ -20,6 +21,7 @@ export const S = {
   pedidosUI: { q: "", pgto: "", envio: "", uf: "", metodo: "", cupom: "", campo: "_data", dir: "desc", pagina: 1, porPagina: 25 },
   clientesUI: { q: "", seg: "compraram", campo: "gasto", dir: "desc", pagina: 1, porPagina: 25 },
   relatorioUI: { tipo: "vendas" },
+  avaliacoesUI: { filtro: "pendente" },
 };
 
 /* ---------------- sessão (Basic Auth guardado só na aba) ---------------- */

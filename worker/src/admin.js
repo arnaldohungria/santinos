@@ -1,6 +1,7 @@
 import { json } from "./util.js";
 import { PRECOS } from "./catalogo.js";
 import { sincronizarPagamentos } from "./pedidos.js";
+import { listarParaAdmin, moderar, apagar as apagarAvaliacao } from "./avaliacoes.js";
 
 const STATUS_ENVIO = ["novo", "separado", "enviado", "entregue"];
 const LIMITE_LISTA = 5000; // pedidos por chamada — sobra muito pra uma loja desse porte
@@ -324,6 +325,15 @@ export async function handleAdmin(req, env, url) {
     if (m === "POST") return salvarConfig(req, env);
   }
   if (p === "/admin/sincronizar" && m === "POST") return sincronizar(req, env);
+  if (p === "/admin/avaliacoes" && m === "GET") return resp(await listarParaAdmin(env), 200, env);
+  if (p === "/admin/avaliacoes" && m === "DELETE") {
+    const r = await apagarAvaliacao(url, env);
+    return resp(r.corpo, r.status, env);
+  }
+  if (p === "/admin/avaliacoes/moderar" && m === "POST") {
+    const r = await moderar(await corpoJson(req), env);
+    return resp(r.corpo, r.status, env);
+  }
 
   return resp({ erro: "Rota não encontrada." }, 404, env);
 }

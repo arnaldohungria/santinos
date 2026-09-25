@@ -658,6 +658,7 @@ body.no-scroll{ overflow: hidden; }
 .pedido-status.pedido-erro{ border-color: var(--reaper); }
 .pedido-titulo{ font-size: clamp(28px, 4vw, 40px); }
 .pedido-texto{ color: var(--bone-dim); max-width: 44ch; margin: 0 auto 28px; }
+.pedido-ref{ font-family: var(--mono); font-size: 15px; letter-spacing: 0.04em; color: var(--bone); margin: -8px 0 26px; }
 .pedido-acoes{ display:flex; gap: 14px; justify-content:center; flex-wrap:wrap; }
 
 /* ---------- Footer: links institucionais ---------- */
@@ -703,4 +704,93 @@ body.no-scroll{ overflow: hidden; }
   .pdp-compra .btn{ width: 100%; flex: none; }
   .pdp-ficha li{ grid-template-columns: 1fr; gap: 4px; }
   .outros-grid{ grid-template-columns: 1fr; }
+}
+
+/* ---------- Avaliações de produtos ---------- */
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+/* ★★★★★ preenchidas até --pct (aceita meia estrela / fração) */
+.estrelas{
+  --pct: 0%;
+  display:inline-block; letter-spacing: 0.08em; line-height: 1; font-size: 1.05em; white-space: nowrap;
+  background: linear-gradient(90deg, var(--suave) var(--pct), var(--bone-faint) var(--pct));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+.rating-mini{ display:inline-flex; align-items:center; gap: 4px; margin: 0 0 10px; font-size: 14px; color: var(--bone-dim); text-decoration: none; }
+.rating-mini:hover .rating-txt{ color: var(--bone); }
+.rating-mini[hidden]{ display:none; }
+
+.pdp-avaliacoes{ border-top: 1px solid var(--bone-faint); padding: 56px 0 0; margin-top: 56px; }
+.pdp-avaliacoes .wrap{ max-width: 760px; }
+.pdp-avaliacoes h2{ font-size: clamp(26px, 4vw, 38px); margin-bottom: 24px; }
+.av-vazio{ color: var(--bone-dim); margin: 0 0 20px; }
+.av-nota-rodape{ font-size: 13px; color: var(--bone-dim); margin: 10px 0 0; }
+.av-resumo{
+  display:grid; grid-template-columns: auto 1fr; gap: 28px 40px; align-items:center;
+  border: 1px solid var(--bone-faint); border-radius: 6px; padding: 24px;
+}
+.av-media{ display:flex; flex-direction:column; align-items:center; gap: 6px; text-align:center; }
+.av-media strong{ font-family: var(--display); font-size: 56px; line-height: 1; color: var(--bone); }
+.av-media .estrelas{ font-size: 22px; }
+.av-total{ font-size: 13px; color: var(--bone-dim); }
+.av-barras{ display:grid; gap: 6px; }
+.av-barra{ display:grid; grid-template-columns: 34px 1fr 28px; align-items:center; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
+.av-barra-trilho{ height: 8px; background: var(--bone-faint); border-radius: 4px; overflow:hidden; }
+.av-barra-fill{ display:block; height:100%; background: var(--suave); border-radius: 4px; }
+.av-barra-qtd{ text-align:right; }
+.av-acao{ grid-column: 1 / -1; }
+.av-lista{ list-style:none; margin: 28px 0 0; padding: 0; }
+.av-item{ padding: 22px 0; border-top: 1px solid var(--bone-faint); }
+.av-item-cab{ display:flex; flex-wrap:wrap; align-items:center; gap: 6px 14px; }
+.av-item-nome{ font-weight: 700; }
+.av-selo{ font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--suave); }
+.av-data{ font-family: var(--mono); font-size: 12px; color: var(--bone-dim); margin-left: auto; }
+.av-texto{ margin: 10px 0 0; color: var(--bone); white-space: pre-line; overflow-wrap: anywhere; }
+.av-resposta{ margin: 14px 0 0; padding: 12px 16px; border-left: 3px solid var(--ember); background: rgba(232,99,43,0.07); border-radius: 0 4px 4px 0; }
+.av-resposta strong{ font-size: 13px; color: var(--ember); }
+.av-resposta p{ margin: 4px 0 0; color: var(--bone-dim); font-size: 15px; white-space: pre-line; overflow-wrap: anywhere; }
+
+/* Página avaliar.html */
+.avaliar{ padding: 60px 0 110px; }
+.avaliar .wrap{ max-width: 640px; }
+.avaliar h1{ font-size: clamp(30px, 5vw, 44px); }
+.avaliar-intro{ color: var(--bone-dim); margin: 0 0 28px; }
+.avaliar-form label, .avaliar-form legend{
+  display:block; margin-bottom: 16px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; color: var(--bone-dim);
+}
+.avaliar-form .opt{ font-weight: 400; }
+.avaliar-form input[type=text], .avaliar-form input[type=email], .avaliar-form select, .avaliar-form textarea{
+  display:block; width:100%; margin-top: 6px;
+  background: var(--charcoal); color: var(--bone);
+  border: 1px solid var(--bone-faint); border-radius: 3px;
+  padding: 11px 12px; font-family: var(--body); font-size: 15px;
+  transition: border-color 0.2s ease;
+}
+.avaliar-form textarea{ resize: vertical; min-height: 110px; }
+.avaliar-form select{ color-scheme: dark; }
+.avaliar-form input:focus, .avaliar-form select:focus, .avaliar-form textarea:focus{ outline: none; border-color: var(--ember); }
+.av-contador{ display:block; text-align:right; font-family: var(--mono); font-size: 11px; margin-top: 4px; }
+.av-estrelas{ border:0; padding:0; margin: 0 0 20px; min-width: 0; }
+.av-estrelas legend{ padding:0; margin-bottom: 6px; }
+.av-estrelas-linha{ display:inline-flex; flex-direction: row-reverse; gap: 4px; }
+.av-estrelas-linha input{ position:absolute; opacity:0; width:1px; height:1px; }
+.av-estrelas-linha label{
+  margin:0; font-size: 44px; line-height: 1; cursor:pointer; color: rgba(241,230,211,0.3); transition: color 0.15s ease, transform 0.15s ease;
+}
+.av-estrelas-linha label:hover, .av-estrelas-linha label:hover ~ label,
+.av-estrelas-linha input:checked ~ label{ color: var(--suave); }
+.av-estrelas-linha label:hover{ transform: scale(1.12); }
+.av-estrelas-linha input:focus-visible + label{ outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 4px; }
+.av-privacidade{ font-size: 13px; color: var(--bone-dim); margin: 4px 0 18px; }
+.av-privacidade a{ color: var(--ember); }
+.av-msg{ min-height: 1.4em; margin: 0 0 12px; font-size: 14px; color: var(--bone-dim); }
+.av-msg.erro{ color: var(--ember); }
+.av-obrigado{ text-align:center; border: 1px solid var(--suave); border-radius: 8px; padding: 44px 30px; }
+.av-obrigado p{ color: var(--bone-dim); max-width: 44ch; margin: 0 auto 26px; }
+
+@media (max-width: 640px){
+  .av-resumo{ grid-template-columns: 1fr; padding: 18px; }
+  .av-data{ margin-left: 0; }
+  .av-estrelas-linha label{ font-size: 40px; }
 }

@@ -413,3 +413,22 @@ textarea { resize: vertical; width: 100%; }
   .rel-print tr { break-inside: avoid; }
   .rel-print tr.totais td { font-weight: 700; background: #f3f3f3; }
 }
+
+/* ---------- Avaliações ---------- */
+.estrelas-txt { color: var(--warn); letter-spacing: 2px; white-space: nowrap; }
+.estrelas-txt .vazia { color: rgba(241, 230, 211, 0.18); }
+.av-resumo-painel { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.av-prod { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.av-prod-nota { font: 700 30px/1 var(--display); color: var(--ink); }
+.av-prod .pend { color: var(--warn); font-weight: 700; }
+.av-dica { margin: 12px 0 16px; }
+.av-lista-painel { display: grid; gap: 12px; }
+.av-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.av-meta { margin-left: auto; color: var(--ink-3); font-size: 12px; }
+.av-quem { margin: 8px 0 0; color: var(--ink-2); font-size: 13px; }
+.av-coment { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.av-resp { margin: 12px 0 0; padding: 10px 14px; border-left: 3px solid var(--ember); background: var(--ember-wash); border-radius: 0 6px 6px 0; }
+.av-resp p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.av-form-resp { margin: 12px 0 0; }
+.av-form-resp textarea { width: 100%; }
+.av-acoes { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }

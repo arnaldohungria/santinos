@@ -600,6 +600,15 @@ function initPedido() {
   box.querySelector(".pedido-titulo").textContent = info.titulo;
   box.querySelector(".pedido-texto").textContent = info.texto;
 
+  // Número do pedido (vem na URL de retorno): o cliente guarda para acompanhar e, depois de receber, avaliar o molho.
+  const refPedido = String(q.get("ref") || "").toUpperCase();
+  if (/^SNT-[A-Z0-9]{3,16}$/.test(refPedido) && info.classe !== "erro") {
+    const p = document.createElement("p");
+    p.className = "pedido-ref";
+    p.textContent = "Número do seu pedido: " + refPedido;
+    box.querySelector(".pedido-texto").after(p);
+  }
+
   if (info.classe === "ok") {
     // Dispara Purchase uma única vez por pedido (a "ref" do Mercado Pago é
     // única por preferência) — evita contar de novo se o cliente atualizar

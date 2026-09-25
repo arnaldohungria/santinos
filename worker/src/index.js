@@ -18,6 +18,8 @@
  *   POST /criar-preferencia   -> recebe o carrinho + a opção de frete escolhida
  *                                (frete.opcaoId) + o cupom (opcional), revalida tudo no
  *                                servidor e cria a preferência no Mercado Pago
+ *   POST /avaliar             -> avaliação de produto (só quem comprou; nasce pendente) — ver avaliacoes.js
+ *   GET  /avaliacoes          -> avaliações aprovadas (?produto=suave) ou resumo de todos os produtos
  *   POST /webhook             -> recebe a notificação de pagamento do Mercado Pago;
  *                                consulta o pagamento e grava/atualiza o pedido em D1
  * Endpoints do painel (todos autenticados — ver admin.js):
@@ -50,6 +52,7 @@ import { PRECOS } from "./catalogo.js";
 import { validarCupom } from "./cupons.js";
 import { salvarPedido } from "./pedidos.js";
 import { handleAdmin } from "./admin.js";
+import { enviarAvaliacao, listarPublicas } from "./avaliacoes.js";
 
 // Limite de requisições por IP nas rotas públicas (binding "ratelimits" do wrangler.toml).
 // Se o binding não existir (ex.: config antiga), não bloqueia nada — só deixa de limitar.
@@ -549,6 +552,15 @@ async function handleRequest(req, env) {
   if (url.pathname === "/criar-preferencia" && req.method === "POST") {
     if (await estourouLimite(env, "RL_PEDIDO", req)) return MUITAS(env);
     return criarPreferencia(req, env);
+  }
+
+  if (url.pathname === "/avaliar" && req.method === "POST") {
+    if (await estourouLimite(env, "RL_AVALIAR", req)) return MUITAS(env);
+    return enviarAvaliacao(req, env);
+  }
+
+  if (url.pathname === "/avaliacoes" && req.method === "GET") {
+    return listarPublicas(url, env);
   }
 
   if (url.pathname === "/webhook") {

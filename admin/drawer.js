@@ -112,7 +112,7 @@ export function criarGaveta(ctx) {
     const situacao = p.status_envio || "novo";
     const opcoes = Object.entries(ENVIO).map(([k, v]) => html`<option value="${k}" ${k === situacao ? raw("selected") : ""}>${v.rot}</option>`);
     const nome = primeiroNome(p.nome);
-    const msgEnvio = `Olá, ${nome}! Seu pedido ${p.external_reference} da Santino's foi enviado.${p.rastreio ? ` Código de rastreio: ${p.rastreio}.` : ""} Qualquer dúvida é só chamar!`;
+    const msgEnvio = `Olá, ${nome}! Seu pedido ${p.external_reference} da Santino's foi enviado.${p.rastreio ? ` Código de rastreio: ${p.rastreio}.` : ""} Quando receber, conta pra gente o que achou? Avalie aqui: https://www.santinos.com.br/avaliar.html?pedido=${encodeURIComponent(p.external_reference)} — Qualquer dúvida é só chamar!`;
     const wa = waLink(p.whatsapp, msgEnvio);
     return html`<section class="gv-sec"><h4>${icone("truck", 15)}Envio</h4>
       <form class="form-envio" data-form="envio">
