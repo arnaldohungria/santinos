@@ -80,11 +80,7 @@
     const nota = el("p", { class: "av-nota-rodape", text: "Só quem comprou pode avaliar. A avaliação aparece depois que a gente conferir." });
 
     if (!d.total) {
-      corpo.append(
-        el("p", { class: "av-vazio", text: "Ainda não há avaliações deste molho. Já provou? Seja o primeiro a contar o que achou." }),
-        botao,
-        nota
-      );
+      // Sem avaliações ainda: só o título da seção (o convite para avaliar vai pelo WhatsApp, no envio do pedido).
     } else {
       const barras = el("div", { class: "av-barras" });
       for (let n = 5; n >= 1; n--) {
