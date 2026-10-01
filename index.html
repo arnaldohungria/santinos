@@ -6,6 +6,17 @@
 <script src="pixel.js"></script>
 <title>Santino's — Molhos de pimenta artesanais</title>
 <meta name="description" content="Santino's: molhos de pimenta artesanais. Suave, Defumado e Extra Forte — feitos com pimentas selecionadas e nenhum atalho.">
+<meta name="theme-color" content="#1B1512">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Santino's">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Santino's — Molhos de pimenta artesanais">
+<meta property="og:description" content="Santino's: molhos de pimenta artesanais. Suave, Defumado e Extra Forte — feitos com pimentas selecionadas e nenhum atalho.">
+<meta property="og:url" content="https://www.santinos.com.br/">
+<meta property="og:image" content="https://www.santinos.com.br/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -45,53 +56,79 @@
   <section class="hero">
     <div class="hero-ember" aria-hidden="true"></div>
     <div class="wrap hero-inner">
-      <p class="eyebrow">Molhos de pimenta artesanais</p>
-      <h1 class="hero-title">Santino's</h1>
-      <p class="hero-tag">Pimenta com propósito: fermentada devagar, temperada com paciência, feita pra ser sentida — não só pra queimar.</p>
-      <div class="hero-actions">
-        <a href="#produtos" class="btn btn-primary">Ver os molhos</a>
-        <a href="#historia" class="btn btn-ghost">Nossa história</a>
+      <div class="hero-texto">
+        <p class="eyebrow">Molhos de pimenta artesanais</p>
+        <h1 class="hero-title">Santino's</h1>
+        <p class="hero-tag">Pimenta com propósito: fermentada devagar, temperada com paciência, feita pra ser sentida — não só pra queimar.</p>
+        <div class="hero-actions">
+          <a href="#produtos" class="btn btn-primary">Ver os molhos</a>
+          <a href="#historia" class="btn btn-ghost">Nossa história</a>
+        </div>
+        <p class="hero-preco"><strong data-preco-de="suave">R$ 19,90</strong> cada · frasco de vidro de 60&nbsp;ml</p>
+      </div>
+      <div class="hero-frascos">
+        <a class="hero-frasco" href="suave.html" aria-label="Santino's Suave"><img src="suave.jpg" alt="Frasco de Santino's Suave" width="1024" height="1024" fetchpriority="high"></a>
+        <a class="hero-frasco" href="defumado.html" aria-label="Santino's Defumado"><img src="defumado.jpg" alt="Frasco de Santino's Defumado" width="1024" height="1024" fetchpriority="high"></a>
+        <a class="hero-frasco" href="extra-forte.html" aria-label="Santino's Extra Forte"><img src="extra-forte.jpg" alt="Frasco de Santino's Extra Forte" width="1254" height="1254" fetchpriority="high"></a>
       </div>
     </div>
     <div class="scroll-cue" aria-hidden="true"><span></span></div>
   </section>
 
+  <div class="beneficios">
+    <ul class="wrap">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.5h11v9h-11z"/><path d="M13.5 9.5h4l3 3.2v2.8h-7"/><circle cx="6.5" cy="17.5" r="1.9"/><circle cx="17" cy="17.5" r="1.9"/></svg><div><strong>Enviamos para todo o Brasil</strong><span>Frete calculado no checkout</span></div></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg><div><strong>Grátis em Itapetininga-SP</strong><span>Entrega local em até 48h</span></div></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><div><strong>Pix, cartão ou boleto</strong><span>Pagamento pelo Mercado Pago</span></div></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5h4v3.2l1.6 2.8V20a1.5 1.5 0 0 1-1.5 1.5H9.9A1.5 1.5 0 0 1 8.4 20V8.5L10 5.7z"/><path d="M8.4 12.5h7.2M8.4 17h7.2"/></svg><div><strong>Receitas originais</strong><span>Frasco de vidro de 60&nbsp;ml</span></div></li>
+    </ul>
+  </div>
+
   <section id="historia" class="story">
     <div class="wrap story-inner">
-      <div class="story-text">
+      <div class="story-text revelar">
         <p class="section-eyebrow">Nossa história</p>
         <h2>Paixão por pimentas</h2>
-        <p>A Santino's Premium Pepper Sauces nasceu em 2021, na cidade de Itapetininga, interior de São Paulo, idealizada por Arnaldo Hungria. O que começou como uma paixão pela gastronomia e pelo universo das pimentas transformou-se em uma marca dedicada a desenvolver molhos artesanais de alto padrão, capazes de surpreender até o paladares mais exigentes. Desde o primeiro dia, nosso compromisso sempre foi produzir molhos premium, elaborados com receitas exclusivas, ingredientes cuidadosamente selecionados e matérias-primas de altíssima qualidade. Cada receita é criada para oferecer muito mais do que ardência: buscamos equilibrio, complexidade de sabores e uma experiência gastronomica única em cada gota.</p>
+        <p class="story-lead">A Santino's Premium Pepper Sauces nasceu em 2021, na cidade de Itapetininga, interior de São Paulo, idealizada por Arnaldo Hungria. O que começou como uma paixão pela gastronomia e pelo universo das pimentas transformou-se em uma marca dedicada a desenvolver molhos artesanais de alto padrão, capazes de surpreender até os paladares mais exigentes.</p>
+        <p>Desde o primeiro dia, nosso compromisso sempre foi produzir molhos premium, elaborados com receitas exclusivas, ingredientes cuidadosamente selecionados e matérias-primas de altíssima qualidade. Cada receita é criada para oferecer muito mais do que ardência: buscamos equilíbrio, complexidade de sabores e uma experiência gastronômica única em cada gota.</p>
         <p>Na Santino's acreditamos que um bom molho deve valorizar os alimentos, despertando novos aromas, sabores e sensações sem esconder a essência de cada prato. Por isso, desenvolvemos produtos que harmonizam com diferentes estilos de culinária, atendendo desde quem aprecia uma picância suave até os verdadeiros apaixonados por pimentas extremamente intensas. Mais do que fabricar molhos, nossa missão é criar experiências memoráveis à mesa, levando autenticidade, qualidade e personalidade para cada cliente. Cada frasco representa nosso cuidado em todas as etapas da produção e o compromisso em oferecer um produto que reflita nossa paixão pela excelência.</p>
-        <p>Santino's Premium Pepper Sauces - Receitas originais, ingredientes de excelência e o verdadeiro sabor da pimenta em sua melhor versão.</p>
+        <blockquote class="story-quote">Receitas originais, ingredientes de excelência e o verdadeiro sabor da pimenta em sua melhor versão.</blockquote>
       </div>
-      <div class="story-art">
-        <img src="logo.png" alt="Selo da Santino's Premium Pepper Sauces — Original Recipes" class="story-logo">
+      <div class="story-art revelar">
+        <img src="logo.png" alt="Selo da Santino's Premium Pepper Sauces — Original Recipes" class="story-logo" loading="lazy">
+        <ul class="story-fatos">
+          <li><strong>2021</strong><span>Fundação</span></li>
+          <li><strong>3</strong><span>Receitas originais</span></li>
+          <li><strong>60&nbsp;ml</strong><span>Frasco de vidro</span></li>
+        </ul>
       </div>
     </div>
   </section>
 
   <section id="produtos" class="produtos">
     <div class="wrap">
-      <p class="section-eyebrow">A linha Santino's</p>
-      <h2 class="section-title">Três receitas, três experiências</h2>
+      <div class="produtos-head revelar">
+        <p class="section-eyebrow">A linha Santino's</p>
+        <h2 class="section-title">Três receitas, três experiências</h2>
+        <p class="section-sub">Mesmo preço, ardências diferentes — escolha a sua.</p>
+      </div>
 
-      <div class="produto-grid">
+      <div class="produto-grid revelar">
 
         <article class="produto-card" data-heat="suave">
-          <div class="produto-art">
+          <a class="produto-art" href="suave.html" tabindex="-1" aria-hidden="true">
             <img src="suave.jpg" alt="Frasco de Santino's Suave, molho de pimenta artesanal de 60ml" class="bottle-photo" loading="lazy">
-          </div>
+          </a>
           <div class="produto-info">
             <p class="produto-eyebrow">Pimenta de todo dia</p>
-            <h3>Santino's Suave</h3>
+            <h3><a href="suave.html">Santino's Suave</a></h3>
             <a class="rating-mini" href="suave.html#avaliacoes" data-rating-de="suave" hidden></a>
             <p class="produto-resumo">Picância leve e equilibrada para o dia a dia. Realça o sabor da comida sem dominar o prato — vai bem em praticamente tudo.</p>
             <a class="produto-verdetalhes" href="suave.html">Ver detalhes</a>
             <p class="produto-pairing"><span>Combina com</span> TUDO.</p>
             <div class="heat-gauge" role="img" aria-label="Ardência: leve">
               <div class="heat-track"><div class="heat-fill" style="width:17%"></div></div>
-              <span class="heat-label">~Leve</span>
+              <span class="heat-label"><span class="heat-rot">Ardência</span> Leve</span>
             </div>
             <div class="produto-compra">
               <span class="produto-preco" data-preco-de="suave">—</span>
@@ -101,19 +138,19 @@
         </article>
 
         <article class="produto-card" data-heat="defumado">
-          <div class="produto-art">
+          <a class="produto-art" href="defumado.html" tabindex="-1" aria-hidden="true">
             <img src="defumado.jpg" alt="Frasco de Santino's Smoked and Spicy" class="bottle-photo" loading="lazy">
-          </div>
+          </a>
           <div class="produto-info">
             <p class="produto-eyebrow">Fumaça, pimenta e paciência</p>
-            <h3>Santino's Defumado</h3>
+            <h3><a href="defumado.html">Santino's Defumado</a></h3>
             <a class="rating-mini" href="defumado.html#avaliacoes" data-rating-de="defumado" hidden></a>
             <p class="produto-resumo">O campeão de vendas. Habanero Chocolate defumada: picância moderada e aroma de fumaça intenso. Feito para churrasco e carnes assadas.</p>
             <a class="produto-verdetalhes" href="defumado.html">Ver detalhes</a>
             <p class="produto-pairing"><span>Combina com</span> churrasco, costela, javali, carnes de caça, queijos curados.</p>
             <div class="heat-gauge" role="img" aria-label="Ardência: moderada">
               <div class="heat-track"><div class="heat-fill" style="width:66%"></div></div>
-              <span class="heat-label">~Moderada</span>
+              <span class="heat-label"><span class="heat-rot">Ardência</span> Moderada</span>
             </div>
             <div class="produto-compra">
               <span class="produto-preco" data-preco-de="defumado">—</span>
@@ -123,19 +160,19 @@
         </article>
 
         <article class="produto-card" data-heat="extra-forte">
-          <div class="produto-art">
+          <a class="produto-art" href="extra-forte.html" tabindex="-1" aria-hidden="true">
             <img src="extra-forte.jpg" alt="Santino's Extra Forte" class="bottle-photo" loading="lazy">
-          </div>
+          </a>
           <div class="produto-info">
             <p class="produto-eyebrow">Santino's Reaper</p>
-            <h3>Santino's Extra Forte</h3>
+            <h3><a href="extra-forte.html">Santino's Extra Forte</a></h3>
             <a class="rating-mini" href="extra-forte.html#avaliacoes" data-rating-de="extra-forte" hidden></a>
             <p class="produto-resumo">Carolina Reaper, uma das pimentas mais ardidas do mundo. Calor intenso com fundo cítrico — poucas gotas por prato bastam.</p>
             <a class="produto-verdetalhes" href="extra-forte.html">Ver detalhes</a>
             <p class="produto-pairing"><span>Combina com</span> poucas gotas por prato — o resto é com você.</p>
             <div class="heat-gauge" role="img" aria-label="Ardência: extra forte">
               <div class="heat-track"><div class="heat-fill" style="width:81%"></div></div>
-              <span class="heat-label">~Extra Forte</span>
+              <span class="heat-label"><span class="heat-rot">Ardência</span> Extra Forte</span>
             </div>
             <div class="produto-compra">
               <span class="produto-preco" data-preco-de="extra-forte">—</span>
@@ -150,30 +187,33 @@
 
   <section id="instagram" class="insta">
     <div class="wrap">
-      <p class="section-eyebrow">No Instagram</p>
-      <h2 class="section-title">@santinospeppersauces</h2>
-      <p class="insta-note">Fique por dentro das nossas novidades.</p>
+      <div class="insta-head revelar">
+        <div>
+          <p class="section-eyebrow">No Instagram</p>
+          <h2 class="section-title">@santinospeppersauces</h2>
+          <p class="insta-note">Fique por dentro das nossas novidades.</p>
+        </div>
+        <a href="https://instagram.com/santinospeppersauces" class="btn btn-ghost" target="_blank" rel="noopener">Seguir no Instagram</a>
+      </div>
 
       <div class="insta-grid" id="instaGrid" hidden></div>
       <p class="insta-fallback" id="instaFallback" hidden>Acompanhe a Santino's no Instagram.</p>
-
-      <p class="insta-cta">
-        <a href="https://instagram.com/santinospeppersauces" class="btn btn-ghost" target="_blank" rel="noopener">Seguir no Instagram</a>
-      </p>
     </div>
   </section>
 
   <section id="contato" class="contato">
-    <div class="wrap contato-inner">
-      <div class="contato-text">
-        <p class="section-eyebrow">Onde encontrar</p>
-        <h2 class="section-title">Entre em contato conosco</h2>
-        <p>Enviamos para todo o Brasil</p>
-        <ul class="contact-list">
-          <li><span>E-mail</span><a href="mailto:contato@santinos.com.br">contato@santinos.com.br</a></li>
-          <li><span>Instagram</span><a href="https://instagram.com/santinospeppersauces" target="_blank" rel="noopener">@santinospeppersauces</a></li>
-          <li><span>WhatsApp</span><a href="https://wa.me/5515998569761" target="_blank" rel="noopener">(15) 99856-9761</a></li>
-        </ul>
+    <div class="wrap">
+      <div class="contato-box revelar">
+        <div class="contato-text">
+          <p class="section-eyebrow">Fale com a gente</p>
+          <h2 class="section-title">Entre em contato conosco</h2>
+          <p>Enviamos para todo o Brasil. Ficou com alguma dúvida sobre os molhos ou sobre o seu pedido? É só chamar.</p>
+        </div>
+        <div class="contato-canais">
+          <a class="contato-canal contato-canal-destaque" href="https://wa.me/5515998569761" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5l1.4-4.2A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 8.6c.2-.5.6-.6 1-.6l.9 2-.8 1c.5 1.1 1.4 2 2.5 2.5l1-.8 2 .9c0 .4-.1.8-.6 1-1 .5-2.3.3-3.9-.9-1.5-1.1-2.4-2.4-2.6-3.6-.1-.6.2-1.2.5-1.5z"/></svg><div><span>WhatsApp</span><strong>(15) 99856-9761</strong></div></a>
+          <a class="contato-canal" href="mailto:contato@santinos.com.br"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg><div><span>E-mail</span><strong>contato@santinos.com.br</strong></div></a>
+          <a class="contato-canal" href="https://instagram.com/santinospeppersauces" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg><div><span>Instagram</span><strong>@santinospeppersauces</strong></div></a>
+        </div>
       </div>
     </div>
   </section>

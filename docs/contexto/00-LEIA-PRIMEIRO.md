@@ -1,6 +1,6 @@
 # Santino's — contexto do projeto (LEIA ANTES DE ALTERAR QUALQUER COISA)
 
-Documento vivo. Última atualização: **2026-09-25 (avaliações de produtos, favicon)**.
+Documento vivo. Última atualização: **2026-10-01 (refino visual da home)**.
 
 ## Regras de trabalho (definidas pelo Arnaldo em 2026-09-24)
 
@@ -112,6 +112,8 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 ## Segurança e e-mail (2026-09-25 — ver `historico/2026-09-25-teste-de-seguranca.md` e `historico/2026-09-25-email-do-dominio.md`)
 
 - `vercel.json` aplica CSP e demais cabeçalhos. **Se adicionar serviço externo novo (script, fonte, API, iframe), liberar o domínio na CSP** ou ele será bloqueado.
+  O Meta Pixel precisa de `www.facebook.com` em `form-action` e `frame-src` (corrigido em 2026-10-01; antes parte dos eventos era bloqueada).
+- Visual da home (2026-10-01): frascos no topo usam `mix-blend-mode: lighten` — o `.hero` precisa ter fundo próprio. Ver `historico/2026-10-01-refino-visual-da-home.md`.
 - Favicon: `favicon.ico`/`favicon-*.png`/`apple-touch-icon.png` na raiz, gerados a partir da pimenta do `logo.png` (ver `historico/2026-09-25-favicon.md`).
 - `.vercelignore` mantém `docs/` e `worker/` fora do site público.
 - Rotas públicas do Worker têm limite por IP (`[[ratelimits]]` no `wrangler.toml`; exige wrangler ≥ 4.36).
@@ -155,6 +157,8 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
 | #32 | 25/09 | Avaliações de produtos (só compradores; aprovação no painel) |
 | #33 | 25/09 | Título da seção de avaliações ("Avaliações de quem já comprou:"); estado vazio só com o título |
+| #34 | 25/09 | Contexto: avaliações confirmadas em produção |
+| #35 | 01/10 | Refino visual da home (frascos no topo, benefícios, história, cards, contato, prévia de link) + Pixel liberado na CSP |
 | #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).
