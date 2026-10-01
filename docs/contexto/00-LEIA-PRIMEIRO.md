@@ -113,6 +113,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 
 - `vercel.json` aplica CSP e demais cabeçalhos. **Se adicionar serviço externo novo (script, fonte, API, iframe), liberar o domínio na CSP** ou ele será bloqueado.
   O Meta Pixel precisa de `www.facebook.com` em `form-action` e `frame-src` (corrigido em 2026-10-01; antes parte dos eventos era bloqueada).
+- Fotos de produto: **fundo preto com luz quente no chão** (as três iguais desde 2026-10-01). Foto nova deve seguir o padrão.
 - Visual da home (2026-10-01): frascos no topo usam `mix-blend-mode: lighten` — o `.hero` precisa ter fundo próprio. Ver `historico/2026-10-01-refino-visual-da-home.md`.
 - Favicon: `favicon.ico`/`favicon-*.png`/`apple-touch-icon.png` na raiz, gerados a partir da pimenta do `logo.png` (ver `historico/2026-09-25-favicon.md`).
 - `.vercelignore` mantém `docs/` e `worker/` fora do site público.
@@ -159,6 +160,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #33 | 25/09 | Título da seção de avaliações ("Avaliações de quem já comprou:"); estado vazio só com o título |
 | #34 | 25/09 | Contexto: avaliações confirmadas em produção |
 | #35 | 01/10 | Refino visual da home (frascos no topo, benefícios, história, cards, contato, prévia de link) + Pixel liberado na CSP |
+| #36 | 01/10 | Preço fora do topo da home; fundo da foto do Extra Forte escurecido para combinar com as outras |
 | #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).

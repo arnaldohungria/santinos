@@ -198,12 +198,6 @@ a{ color: inherit; }
   margin: 0 0 32px;
 }
 .hero-actions{ display:flex; gap:14px; flex-wrap:wrap; }
-.hero-preco{
-  margin: 22px 0 0;
-  font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em;
-  color: var(--bone-dim);
-}
-.hero-preco strong{ color: var(--bone); font-weight: 500; }
 
 /* Os três frascos: as fotos têm fundo escuro; "lighten" deixa aparecer o fundo do site
    onde a foto é mais escura que ele, então os frascos parecem soltos na página. */
@@ -232,7 +226,6 @@ a{ color: inherit; }
 .hero-frasco:nth-child(1){ transform: rotate(-6deg) translateY(4%); }
 .hero-frasco:nth-child(2){ width: 44%; z-index: 2; }
 .hero-frasco:nth-child(3){ transform: rotate(6deg) translateY(4%); }
-.hero-frasco:nth-child(3) img{ filter: brightness(0.82) contrast(1.18); } /* fundo dessa foto é mais claro */
 .hero-frasco:nth-child(2):hover{ transform: translateY(-3%); }
 .hero-frasco:nth-child(1):hover{ transform: rotate(-6deg) translateY(0); }
 .hero-frasco:nth-child(3):hover{ transform: rotate(6deg) translateY(0); }
@@ -512,7 +505,6 @@ section{ padding: 112px 0; }
   .hero-title{ font-size: clamp(68px, 21vw, 96px); margin-bottom: 18px; }
   .hero-tag{ font-size: 17px; margin-bottom: 24px; }
   .hero-actions .btn{ flex: 1; text-align:center; padding: 14px 16px; }
-  .hero-preco{ font-size: 12px; margin-top: 16px; }
   .beneficios ul{ grid-template-columns: 1fr 1fr; gap: 18px 14px; padding-top: 22px; padding-bottom: 22px; }
   .beneficios li{ align-items:flex-start; gap: 10px; }
   .beneficios svg{ width: 24px; height: 24px; }
