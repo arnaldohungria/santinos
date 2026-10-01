@@ -358,6 +358,20 @@ section{ padding: 112px 0; }
   transition: transform 0.5s ease;
 }
 .produto-card:hover .bottle-photo{ transform: scale(1.05); }
+/* Selo "Ver detalhes" sobre a foto: deixa claro que a foto abre a página do molho.
+   Celular (sem mouse): sempre visível. Computador: aparece ao passar o mouse. */
+.produto-art-cta{
+  position:absolute; top: 12px; right: 12px;
+  padding: 7px 14px; border-radius: 999px; white-space: nowrap;
+  background: rgba(27,21,18,0.82); border: 1px solid var(--heat-color);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone);
+  backdrop-filter: blur(4px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+@media (hover: hover){
+  .produto-art-cta{ opacity: 0; transform: translateY(-6px); }
+  .produto-art:hover .produto-art-cta{ opacity: 1; transform: none; }
+}
 
 .produto-info{
   flex: 1;
@@ -513,6 +527,7 @@ section{ padding: 112px 0; }
   .story-text .story-lead{ font-size: 18px; }
   .contato-box{ padding: 28px 20px; gap: 28px; }
   .insta-grid{ gap: 8px; }
+  .produto-art-cta{ top: 10px; right: 10px; padding: 5px 10px; font-size: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce){
