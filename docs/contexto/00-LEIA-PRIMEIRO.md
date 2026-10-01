@@ -161,6 +161,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #34 | 25/09 | Contexto: avaliações confirmadas em produção |
 | #35 | 01/10 | Refino visual da home (frascos no topo, benefícios, história, cards, contato, prévia de link) + Pixel liberado na CSP |
 | #36 | 01/10 | Preço fora do topo da home; fundo da foto do Extra Forte escurecido para combinar com as outras |
+| #37 | 01/10 | Selo "Ver detalhes" sobre a foto dos cards (a foto já abria a página do molho) |
 | #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).
