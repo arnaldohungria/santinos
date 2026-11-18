@@ -1,6 +1,6 @@
 # Santino's — contexto do projeto (LEIA ANTES DE ALTERAR QUALQUER COISA)
 
-Documento vivo. Última atualização: **2026-10-01 (refino visual da home)**.
+Documento vivo. Última atualização: **2026-11-18 (textos alinhados com a produção real)**.
 
 ## Regras de trabalho (definidas pelo Arnaldo em 2026-09-24)
 
@@ -80,6 +80,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 - Desconto de cupom vai ao Mercado Pago como item de valor **negativo**; há fallback automático (item único já descontado se o MP recusar).
 - **Fins de linha:** o repo guarda LF, mas no Windows os arquivos ficam CRLF (autocrlf). Ao editar por script, normalize `\r\n` → `\n` antes de casar textos e converta de volta ao gravar; nunca faça `replace(/\n/g, "\r\n")` em arquivo que já tem CRLF (vira `\r\r\n` e o git trata como binário).
 - **Nunca criar avaliações/depoimentos fictícios** (decisão do Arnaldo após conversa em 2026-09-25: é publicidade enganosa). Prova social só com compras/depoimentos reais.
+- **Texto de produto só com o que a receita tem de fato** (2026-11-18): o Defumado não leva Habanero Chocolate, nada é fermentado, o Suave não é blend de pimentas. Antes de citar pimenta, processo ou ingrediente, confirmar com o Arnaldo. Este repositório é **público**: detalhes da receita não entram aqui. Ver `historico/2026-11-18-textos-fieis-a-producao.md`.
 - Avaliações: o pedido só pode ser avaliado com pagamento `approved` **e** `status_envio` = enviado/entregue — se o Arnaldo esquecer de marcar como enviado no painel, o cliente não consegue avaliar.
 - Plano grátis do Workers limita CPU/consultas: sincronização é paginada (30 por vez) e lotes de envio têm no máx. 40.
 - `wrangler d1 ... --local` dá "internal error" em Windows neste ambiente; para testar o Worker sem conta usei um servidor Node
@@ -162,6 +163,6 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #35 | 01/10 | Refino visual da home (frascos no topo, benefícios, história, cards, contato, prévia de link) + Pixel liberado na CSP |
 | #36 | 01/10 | Preço fora do topo da home; fundo da foto do Extra Forte escurecido para combinar com as outras |
 | #37 | 01/10 | Selo "Ver detalhes" sobre a foto dos cards (a foto já abria a página do molho) |
-| #31 | 25/09 | Favicon (pimenta do logo) em todas as páginas |
+| #38 | 18/11 | Textos alinhados com a produção real (sem Habanero, sem "fermentada", sem "blend de pimentas"; "receitas próprias") 
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).
