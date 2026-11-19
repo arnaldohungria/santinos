@@ -2,6 +2,7 @@ import { json } from "./util.js";
 import { PRECOS } from "./catalogo.js";
 import { sincronizarPagamentos } from "./pedidos.js";
 import { listarParaAdmin, moderar, apagar as apagarAvaliacao } from "./avaliacoes.js";
+import * as consig from "./consignados.js";
 
 const STATUS_ENVIO = ["novo", "separado", "enviado", "entregue"];
 const LIMITE_LISTA = 5000; // pedidos por chamada — sobra muito pra uma loja desse porte
@@ -333,6 +334,17 @@ export async function handleAdmin(req, env, url) {
   if (p === "/admin/avaliacoes/moderar" && m === "POST") {
     const r = await moderar(await corpoJson(req), env);
     return resp(r.corpo, r.status, env);
+  }
+
+  if (p.startsWith("/admin/consignados")) {
+    let x = null;
+    if (p === "/admin/consignados" && m === "GET") x = await consig.listar(env);
+    else if (p === "/admin/consignados/ponto" && m === "POST") x = await consig.salvarPonto(await corpoJson(req), env);
+    else if (p === "/admin/consignados/ponto" && m === "DELETE") x = await consig.apagarPonto(url, env);
+    else if (p === "/admin/consignados/movimento" && m === "POST") x = await consig.registrarMovimento(await corpoJson(req), env);
+    else if (p === "/admin/consignados/movimento" && m === "DELETE") x = await consig.desfazerMovimento(url, env);
+    else if (p === "/admin/consignados/pagar" && m === "POST") x = await consig.marcarPago(await corpoJson(req), env);
+    if (x) return resp(x.corpo, x.status, env);
   }
 
   return resp({ erro: "Rota não encontrada." }, 404, env);

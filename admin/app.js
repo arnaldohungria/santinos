@@ -11,17 +11,19 @@ import cuponsView from "./views/cupons.js";
 import avaliacoesView from "./views/avaliacoes.js";
 import relatoriosView from "./views/relatorios.js";
 import configView from "./views/config.js";
+import consignadosView from "./views/consignados.js";
 
 const ABAS = [
   ["dashboard", "Dashboard", "dashboard"],
   ["pedidos", "Pedidos", "pedidos"],
   ["clientes", "Clientes", "clientes"],
+  ["consignados", "Consignados", "pin"],
   ["avaliacoes", "Avaliações", "star"],
   ["cupons", "Cupons", "cupons"],
   ["relatorios", "Relatórios", "relatorios"],
   ["config", "Configurações", "config"],
 ];
-const FABRICAS = { dashboard: dashboardView, pedidos: pedidosView, clientes: clientesView, avaliacoes: avaliacoesView, cupons: cuponsView, relatorios: relatoriosView, config: configView };
+const FABRICAS = { dashboard: dashboardView, pedidos: pedidosView, clientes: clientesView, consignados: consignadosView, avaliacoes: avaliacoesView, cupons: cuponsView, relatorios: relatoriosView, config: configView };
 const INTERVALO_ATUALIZACAO_MS = 45000;
 
 const $ = (id) => document.getElementById(id);
