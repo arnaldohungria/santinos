@@ -37,6 +37,9 @@ npx wrangler deploy
 ```
 Migração **antes** do deploy. Até o deploy, a aba mostra o aviso "rode a migração 004 e o deploy".
 
+## Publicado
+18/11/2026: migração 004 aplicada no D1 remoto (3 consultas) e Worker publicado pelo Arnaldo (versão `1205b6f9`). Conferido: `/health` 200 e `/admin/consignados` sem senha → 401.
+
 ## Como testar
 Painel → Consignados → Novo comércio → Registrar entrega → Fazer acerto (preencher o que sobrou) → Comprovante.
 Conferido em 18/11 com um Worker local (D1 falso): números, comprovante, pagamento, desfazer e tela de 375 px.

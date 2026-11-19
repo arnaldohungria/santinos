@@ -103,7 +103,7 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 
 ## Por onde retomar (próximos passos, em ordem)
 
-- **PENDENTE (Arnaldo, 18/11): publicar a consignação** — no PowerShell, na pasta `worker`: `git pull` → `npx wrangler d1 execute santinos-db --remote --file=./migrations/004_consignados.sql` → `npx wrangler deploy`. Até isso, a aba Consignados do painel mostra o aviso "rode a migração 004 e o deploy".
+- ~~Publicar a consignação~~ — **feito em 18/11** pelo Arnaldo (migração 004 + `wrangler deploy`, versão 1205b6f9). Neste PC o PowerShell bloqueia `npx` (política de scripts): usar **`npx.cmd`**. Caminho do clone neste PC: `C:UsersarnalDesktopARNALDO HUNGRIAMeus projetos - CLAUDESANTINOSsiteworker`.
 
 0. **Conseguir as primeiras avaliações reais:** convidar compradores (link no WhatsApp do painel, mensagem "pedido enviado"); lembrar de marcar o pedido como **Enviado** no painel, senão o cliente não consegue avaliar. Sem avaliação fictícia.
 1. **Arnaldo mede e pesa as caixas reais** (1, 2, 3 e 6 frascos, com o frasco dentro) → o Claude atualiza `PACOTES` em `worker/src/index.js`, faz PR e o Arnaldo roda `wrangler deploy`.
