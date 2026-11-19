@@ -432,3 +432,53 @@ textarea { resize: vertical; width: 100%; }
 .av-form-resp { margin: 12px 0 0; }
 .av-form-resp textarea { width: 100%; }
 .av-acoes { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+
+/* ---------- Consignados ---------- */
+.consig-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 16px; }
+.consig-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 16px; }
+.consig-topo > .link-btn { flex-basis: 100%; justify-content: flex-start; text-align: left; }
+.consig-tit { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 0; }
+.consig-tit h2 { font: 700 26px/1.1 var(--display); letter-spacing: 0.01em; overflow-wrap: anywhere; }
+.consig-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.consig-grade { margin-top: 16px; }
+.consig-grade .mini-kpis small { font-size: 11px; margin-top: 2px; }
+.consig-form { display: grid; gap: 14px; max-width: 760px; }
+.consig-form > label { display: block; font-size: 12px; color: var(--ink-2); font-weight: 600; max-width: 320px; }
+.consig-form > label input, .consig-form > label select { display: block; width: 100%; margin-top: 5px; font-weight: 400; font-size: 14px; }
+.consig-form .opt { color: var(--ink-3); font-weight: 400; }
+.consig-qtd { max-width: 620px; }
+.consig-qtd input[type=number] { width: 84px; text-align: right; }
+.consig-qtd td, .consig-qtd th { vertical-align: middle; }
+.consig-total { font-weight: 600; color: var(--ink); }
+.consig-pgto { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: flex-end; }
+.consig-pgto .check { display: flex; align-items: center; gap: 8px; font-weight: 600; padding-bottom: 8px; }
+.consig-pgto label:not(.check) { display: block; font-size: 12px; color: var(--ink-2); font-weight: 600; }
+.consig-pgto select { display: block; margin-top: 5px; }
+.consig-pagar { display: inline-flex; align-items: center; gap: 6px; }
+.consig-apagar { margin-top: 14px; font-size: 12px; }
+.consig-hist .pill { white-space: nowrap; }
+.dl .pre { white-space: pre-wrap; }
+@media (max-width: 900px) {
+  .consig-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .consig-tit h2 { font-size: 22px; }
+  .consig-acoes .btn { flex: 1 1 auto; }
+}
+@media print {
+  .comp-print { font-size: 10.5pt; }
+  .comp-print .rel-cab span { display: block; font-size: 8.5pt; color: #333; max-width: 115mm; }
+  .comp-cliente { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm 8mm; margin: 5mm 0 2mm; padding: 3mm 4mm; border: 1px solid #999; }
+  .comp-cliente span { display: block; font-size: 8pt; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
+  .comp-print h2 { font-size: 12pt; margin: 5mm 0 2mm; }
+  .comp-print table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  .comp-print th, .comp-print td { border: 1px solid #999; padding: 1.6mm 2.5mm; text-align: left; }
+  .comp-print th { background: #eee; }
+  .comp-print .num { text-align: right; }
+  .comp-print tr.totais td { font-weight: 700; background: #f3f3f3; }
+  .comp-pgto, .comp-estoque { margin-top: 3mm; }
+  .comp-regra { margin-top: 4mm; font-size: 8.5pt; color: #333; }
+  .comp-assin { display: grid; grid-template-columns: 1fr 1fr; gap: 14mm; margin-top: 16mm; font-size: 9pt; text-align: center; }
+  .comp-assin span { display: block; border-top: 1px solid #000; margin-bottom: 1.5mm; }
+  .comp-rodape { margin-top: 8mm; font-size: 8pt; color: #666; }
+}

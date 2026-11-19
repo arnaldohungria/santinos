@@ -28,6 +28,10 @@ Hospedado no **Cloudflare Workers** (free tier). Mesmo padrão do projeto Academ
 | GET/POST/DELETE | `/admin/cupons` | (Basic Auth) lista (com uso/desconto/receita), cria/edita (upsert), liga/desliga `{codigo, ativo}` ou apaga |
 | GET/POST | `/admin/config` | (Basic Auth) custos por produto, embalagem e meta mensal |
 | POST | `/admin/sincronizar` | (Basic Auth) corpo `{ dias, offset }` — busca pagamentos no Mercado Pago e grava (30 por chamada; devolve `proximo`) |
+| GET | `/admin/consignados` | (Basic Auth) comércios + todos os movimentos de consignação + produtos |
+| POST/DELETE | `/admin/consignados/ponto` | (Basic Auth) cria/edita comércio (`id` opcional) ou apaga (`?id=`, só sem histórico) |
+| POST/DELETE | `/admin/consignados/movimento` | (Basic Auth) registra entrega/acerto/recolhimento ou desfaz (`?id=`, só o último do comércio) |
+| POST | `/admin/consignados/pagar` | (Basic Auth) corpo `{ id, pago, forma_pagamento? }` — marca/desmarca um acerto como recebido |
 
 ## Configuração
 
@@ -241,3 +245,11 @@ item único já descontado (o cliente paga o mesmo total).
 - Painel: `GET|DELETE /admin/avaliacoes`, `POST /admin/avaliacoes/moderar` (`{id, status?, resposta?}`).
 - Tabela `avaliacoes` — migração `migrations/003_avaliacoes.sql` (rodar antes do deploy).
 - Testes: `node worker/test/avaliacoes.test.mjs`.
+
+## Consignação (comércios que vendem os molhos na prateleira)
+
+- Código: `src/consignados.js`; tela `admin/views/consignados.js`; comprovante em `admin/impressao.js`.
+- Tabelas `consig_pontos` e `consig_movimentos` — migração `migrations/004_consignados.sql` (rodar antes do deploy).
+- O estoque de cada comércio não é gravado: é entregas − vendidos − recolhidos. No **acerto** o painel manda o que SOBROU; o Worker calcula os vendidos e o valor (vendidos × `preco_repasse_centavos` do comércio, padrão R$ 14) e pode gravar junto uma reposição (entrega) da mesma visita.
+- Só o último movimento de um comércio pode ser desfeito; comércio com histórico não se apaga (vira "encerrado").
+- Testes: `node worker/test/consignados.test.mjs`.

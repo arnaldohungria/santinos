@@ -1,6 +1,6 @@
 # Santino's — contexto do projeto (LEIA ANTES DE ALTERAR QUALQUER COISA)
 
-Documento vivo. Última atualização: **2026-11-18 (textos alinhados com a produção real)**.
+Documento vivo. Última atualização: **2026-11-18 (CRM de consignados no painel)**.
 
 ## Regras de trabalho (definidas pelo Arnaldo em 2026-09-24)
 
@@ -45,6 +45,7 @@ Cliente ──> Site estático (Vercel, repo arnaldohungria/santinos, branch mai
 | Worker | `worker/` | Secrets: `MP_ACCESS_TOKEN`, `INTERNAL_SHARED_SECRET` (igual ao da Vercel), `ADMIN_PASSWORD`. Vars em `worker/wrangler.toml` |
 | Pagamento | Mercado Pago Checkout Pro | Pix, cartão, boleto; redireciona pro MP e volta em `pedido.html` |
 | Painel | `admin.html` + `admin/` | Dashboard, pedidos, clientes, cupons, relatórios, config. Usuário `admin` |
+| Consignados | aba "Consignados" do painel, `worker/src/consignados.js` | Comércios com os molhos em consignação: entrega, acerto (conta o que sobrou → vendidos × R$ 14), recolhimento, a receber, aviso de acerto atrasado (30 dias) e comprovante para imprimir. Ver `historico/2026-11-18-crm-consignados.md` |
 | Avaliações | `avaliar.html` + `avaliacoes.js` (site), `worker/src/avaliacoes.js`, aba "Avaliações" do painel | Nota 1–5 + comentário, **só de quem comprou** (nº do pedido + e-mail), **publica só depois da aprovação** no painel. Ver `historico/2026-09-25-avaliacoes-de-produtos.md` |
 | Meta Pixel | `pixel.js` | ID `1066393226136565`; eventos ViewContent/AddToCart/InitiateCheckout/Purchase em `loja.js` |
 | Catálogo Meta | `catalogo.csv` → <https://www.santinos.com.br/catalogo.csv> | IDs `suave`/`defumado`/`extra-forte` = `content_ids` do Pixel |
@@ -58,8 +59,8 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
   `beholdFeedId`), carrinho, checkout (ViaCEP, opções de frete, cupom), retorno do pagamento, eventos do Pixel.
 - `worker/src/index.js` — checkout (frete, cupom, preferência do MP, webhook). `admin.js` (API do painel, login com
   bloqueio), `pedidos.js` (grava/sincroniza pagamentos), `cupons.js` (regras), `catalogo.js` (**preços — cópia-verdade**), `util.js`.
-- `worker/schema.sql` (banco novo) e `worker/migrations/` (banco existente — rodar **antes** do deploy; a mais recente é `003_avaliacoes.sql`).
-- `worker/test/*.test.mjs` — testes sem Cloudflare (D1 falso em `node:sqlite`): `node worker/test/avaliacoes.test.mjs` e `node worker/test/checkout.test.mjs`.
+- `worker/schema.sql` (banco novo) e `worker/migrations/` (banco existente — rodar **antes** do deploy; a mais recente é `004_consignados.sql`).
+- `worker/test/*.test.mjs` — testes sem Cloudflare (D1 falso em `node:sqlite`): `node worker/test/avaliacoes.test.mjs`, `node worker/test/checkout.test.mjs` e `node worker/test/consignados.test.mjs`.
 - `admin/` — módulos ES do painel (`app.js` casca, `views/*` telas, `dados.js` regras, `charts.js`, `relatorios-def.js`, `impressao.js`).
 - `worker/README.md` — documentação técnica detalhada (rotas, cupons, webhook, painel).
 
@@ -101,6 +102,8 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
   feed agendado diário com a URL do `catalogo.csv`, moeda BRL. Perfil do WhatsApp/Instagram sendo personalizado. **Divulgação (tráfego pago) prestes a começar.**
 
 ## Por onde retomar (próximos passos, em ordem)
+
+- **PENDENTE (Arnaldo, 18/11): publicar a consignação** — no PowerShell, na pasta `worker`: `git pull` → `npx wrangler d1 execute santinos-db --remote --file=./migrations/004_consignados.sql` → `npx wrangler deploy`. Até isso, a aba Consignados do painel mostra o aviso "rode a migração 004 e o deploy".
 
 0. **Conseguir as primeiras avaliações reais:** convidar compradores (link no WhatsApp do painel, mensagem "pedido enviado"); lembrar de marcar o pedido como **Enviado** no painel, senão o cliente não consegue avaliar. Sem avaliação fictícia.
 1. **Arnaldo mede e pesa as caixas reais** (1, 2, 3 e 6 frascos, com o frasco dentro) → o Claude atualiza `PACOTES` em `worker/src/index.js`, faz PR e o Arnaldo roda `wrangler deploy`.
@@ -164,5 +167,6 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #36 | 01/10 | Preço fora do topo da home; fundo da foto do Extra Forte escurecido para combinar com as outras |
 | #37 | 01/10 | Selo "Ver detalhes" sobre a foto dos cards (a foto já abria a página do molho) |
 | #38 | 18/11 | Textos alinhados com a produção real (sem Habanero, sem "fermentada", sem "blend de pimentas"; "receitas próprias") 
+| #39 | 18/11 | CRM de consignados no painel (comércios, entregas, acertos, comprovante) — exige migração 004 + deploy do Worker |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).
