@@ -1,6 +1,6 @@
 # Santino's — contexto do projeto (LEIA ANTES DE ALTERAR QUALQUER COISA)
 
-Documento vivo. Última atualização: **2026-11-18 (CRM de consignados no painel)**.
+Documento vivo. Última atualização: **2026-11-25 (app Android do painel)**.
 
 ## Regras de trabalho (definidas pelo Arnaldo em 2026-09-24)
 
@@ -46,6 +46,7 @@ Cliente ──> Site estático (Vercel, repo arnaldohungria/santinos, branch mai
 | Pagamento | Mercado Pago Checkout Pro | Pix, cartão, boleto; redireciona pro MP e volta em `pedido.html` |
 | Painel | `admin.html` + `admin/` | Dashboard, pedidos, clientes, cupons, relatórios, config. Usuário `admin` |
 | Consignados | aba "Consignados" do painel, `worker/src/consignados.js` | Comércios com os molhos em consignação: entrega, acerto (conta o que sobrou → vendidos × R$ 14), recolhimento, a receber, aviso de acerto atrasado (30 dias) e comprovante para imprimir. Ver `historico/2026-11-18-crm-consignados.md` |
+| App Android | Release `app-v*` do GitHub; link no menu do painel | WebView do `admin.html` com acesso por digital/PIN. Código e assinatura só no PC do Arnaldo (`SANTINOS/app-android`). Ver `historico/2026-11-25-app-android.md` |
 | Avaliações | `avaliar.html` + `avaliacoes.js` (site), `worker/src/avaliacoes.js`, aba "Avaliações" do painel | Nota 1–5 + comentário, **só de quem comprou** (nº do pedido + e-mail), **publica só depois da aprovação** no painel. Ver `historico/2026-09-25-avaliacoes-de-produtos.md` |
 | Meta Pixel | `pixel.js` | ID `1066393226136565`; eventos ViewContent/AddToCart/InitiateCheckout/Purchase em `loja.js` |
 | Catálogo Meta | `catalogo.csv` → <https://www.santinos.com.br/catalogo.csv> | IDs `suave`/`defumado`/`extra-forte` = `content_ids` do Pixel |
@@ -168,5 +169,6 @@ Conta de anúncios Meta: `920054342570415` (conjunto de dados/Pixel "Santinos").
 | #37 | 01/10 | Selo "Ver detalhes" sobre a foto dos cards (a foto já abria a página do molho) |
 | #38 | 18/11 | Textos alinhados com a produção real (sem Habanero, sem "fermentada", sem "blend de pimentas"; "receitas próprias") 
 | #39 | 18/11 | CRM de consignados no painel (comércios, entregas, acertos, comprovante) — exige migração 004 + deploy do Worker |
+| #41 | 25/11 | Link "Baixar app Android" no menu do painel (APK em Release do GitHub) |
 
 Notas detalhadas por alteração: pasta [`historico/`](historico/) (a partir de 2026-09-24).
